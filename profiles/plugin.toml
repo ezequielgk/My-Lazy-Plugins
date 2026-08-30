@@ -1,0 +1,21 @@
+id         = "ezequielgk/profiles"
+name       = "Profiles"
+version    = "1.0.0"
+plugin_api = 22
+author     = "ezequielgk"
+license    = "MIT"
+icon       = "layers"
+description = "Save, load and switch between Noctalia config profiles."
+tags       = ["bar", "panel", "system", "productivity"]
+
+[[widget]]
+id    = "switcher"
+entry = "widget.luau"
+
+[[shortcut]]
+id    = "tile"
+entry = "shortcut.luau"
+
+[[panel]]
+id    = "manager"
+entry = "panel.luau"
