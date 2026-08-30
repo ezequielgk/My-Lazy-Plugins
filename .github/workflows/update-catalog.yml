@@ -1,0 +1,31 @@
+name: Update catalog
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "**/plugin.toml"
+
+permissions:
+  contents: write
+
+jobs:
+  catalog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Regenerate catalog.toml
+        run: python scripts/generate_catalog.py
+
+      - name: Commit catalog.toml
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: regenerate catalog.toml"
+          file_pattern: catalog.toml
