@@ -1,0 +1,29 @@
+# This file is auto-generated. Do not edit manually.
+# Do not include it in your commit.
+# Noctalia plugins catalog.
+
+[[plugin]]
+id = "ezequiel/mango_layouts"
+name = "Mango Layouts"
+version = "1.0.0"
+updated_at = 1788103185
+added_at = 1788103185
+author = "ezequiel"
+license = "MIT"
+icon = "layout-filled"
+description = "Layout switcher for MangoWC"
+plugin_api = 14
+tags = ["bar", "panel", "mangowc", "utility"]
+
+[[plugin]]
+id = "ezequielgk/profiles"
+name = "Profiles"
+version = "1.0.0"
+updated_at = 1788103185
+added_at = 1788103185
+author = "ezequielgk"
+license = "MIT"
+icon = "layers"
+description = "Save, load and switch between Noctalia config profiles."
+plugin_api = 22
+tags = ["bar", "panel", "system", "productivity"]
