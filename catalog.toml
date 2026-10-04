@@ -27,3 +27,16 @@ icon = "layers"
 description = "Save, load and switch between Noctalia config profiles."
 plugin_api = 22
 tags = ["bar", "panel", "system", "productivity"]
+
+[[plugin]]
+id = "ashur-d/wallpaper-widget"
+name = "Wallpaper Widget"
+version = "1.0.1"
+updated_at = 1791157720
+added_at = 1791157720
+author = "ashur-d"
+license = "MIT"
+icon = "image"
+description = "Cinematic horizontal wallpaper switcher carousel and bar widget."
+plugin_api = 15
+tags = ["bar", "panel", "shortcut", "wallpaper"]
