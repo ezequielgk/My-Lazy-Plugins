@@ -1,0 +1,64 @@
+{
+  "notify": {
+    "switched": "Fondo cambiado",
+    "switched_with_palette": "Fondo y paleta aplicados"
+  },
+  "panel": {
+    "active": "ACTIVO",
+    "back": "Volver",
+    "empty": "No se encontraron fondos en el directorio.",
+    "empty_hint": "Añade imágenes (.png, .jpg, .jpeg, .webp) a tu carpeta de fondos.",
+    "empty_folders": "No se encontraron carpetas de fondos.",
+    "empty_folders_hint": "Añade subcarpetas con imágenes dentro de tu carpeta de fondos.",
+    "folders_count": "carpetas",
+    "folder_hint": "←  →  ↑  ↓ explorar   ·   Enter entrar   ·   P cambiar paleta   ·   Esc cerrar",
+    "folder_title": "Colecciones de Fondos",
+    "hint": "←  →  ↑  ↓ explorar   ·   Enter aplicar   ·   Del volver   ·   Espacio aleatorio   ·   Esc cerrar",
+    "loading": "Cargando...",
+    "palette": "Paleta",
+    "palette_source_builtin": "Integrada",
+    "palette_source_community": "Comunidad",
+    "palette_source_custom": "Personalizada",
+    "palette_source_none": "Ninguna",
+    "palette_source_wallpaper": "Fondo",
+    "title": "Wallpaper Widget",
+    "wallpapers_count": "fondos"
+  },
+  "settings": {
+    "apply_palette": {
+      "description": "Aplica automáticamente a Noctalia la paleta asignada a la carpeta al elegir un fondo.",
+      "label": "Aplicar Paleta de Color"
+    },
+    "close_on_apply": {
+      "description": "Cierra automáticamente el panel tras aplicar un fondo.",
+      "label": "Cerrar al Aplicar"
+    },
+    "default_palette_source": {
+      "auto": "Automático (Coincidir con carpeta o Fondo)",
+      "description": "Estrategia para asignar paleta cuando una carpeta no tiene una explícita.",
+      "label": "Origen de Paleta por Defecto",
+      "none": "Ninguno (Mantener paleta actual)",
+      "wallpaper": "Fondo (Generar colores desde la imagen)"
+    },
+    "notify_on_change": {
+      "description": "Muestra una notificación en el escritorio al cambiar el fondo o la paleta.",
+      "label": "Notificar al Cambiar"
+    },
+    "wallpaper_dir": {
+      "description": "Ruta de la carpeta de fondos. Déjala vacía para usar la carpeta de Noctalia.",
+      "label": "Directorio de Fondos"
+    }
+  },
+  "shortcut": {
+    "label": "Wallpaper Widget"
+  },
+  "widget": {
+    "click": "Clic",
+    "open": "Abrir carrusel",
+    "random_hint": "Aleatorio",
+    "right_click": "Clic derecho",
+    "scroll": "Rueda",
+    "scroll_hint": "Siguiente / anterior",
+    "toggle_panel": "Alternar panel"
+  }
+}
