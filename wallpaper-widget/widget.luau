@@ -41,7 +41,7 @@ function update()
 end
 
 function onClick()
-  noctalia.togglePanel("ashur-d/wallpaper-widget:hub")
+  noctalia.togglePanel("ezequielgk/wallpaper-widget:hub")
 end
 
 function onRightClick()

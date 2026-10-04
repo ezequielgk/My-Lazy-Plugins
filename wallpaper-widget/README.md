@@ -6,7 +6,8 @@ A cinematic horizontal wallpaper switcher carousel and interactive bar widget fo
 
 | Field | Value |
 | --- | --- |
-| ID | `ashur-d/wallpaper-widget` |
+| ID | `ezequielgk/wallpaper-widget` |
+| Author | `ezequielgk` |
 | Entries | Panel: `hub`; bar widget: `widget`; shortcut: `toggle` |
 
 ## Usage
@@ -18,7 +19,7 @@ Wallpaper Widget provides convenient ways to browse collections, switch wallpape
 Open the floating carousel panel directly or bind it to a custom compositor keybind:
 
 ```sh
-noctalia msg panel-toggle ashur-d/wallpaper-widget:hub
+noctalia msg panel-toggle ezequielgk/wallpaper-widget:hub
 ```
 
 #### Level 1: Folder / Palette Collections Carousel

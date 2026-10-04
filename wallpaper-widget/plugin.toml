@@ -1,8 +1,8 @@
-id = "ashur-d/wallpaper-widget"
+id = "ezequielgk/wallpaper-widget"
 name = "Wallpaper Widget"
 version = "1.0.1"
 plugin_api = 15
-author = "ashur-d"
+author = "ezequielgk"
 license = "MIT"
 icon = "image"
 description = "Cinematic horizontal wallpaper switcher carousel and bar widget."
