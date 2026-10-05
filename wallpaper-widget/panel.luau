@@ -559,6 +559,9 @@ local function loadAllFolders()
 
   allFolders = folderList
   isScanning = false
+  if render then
+    render()
+  end
 
   refreshActiveWallpaper(function()
     if currentWallpaper ~= "" and #allFolders > 0 then
@@ -603,7 +606,7 @@ local function scheduleFolderDisplay()
   navToken = navToken + 1
   local cur = navToken
   render()
-  noctalia.runAsync({"sleep", "0.040"}, function()
+  noctalia.runAsync("sleep 0.040", function()
     if isOpen and navToken == cur then
       displayedFolderIndex = selectedFolderIndex
       render()
@@ -634,7 +637,7 @@ local function scheduleWallpaperDisplay()
   navToken = navToken + 1
   local cur = navToken
   render()
-  noctalia.runAsync({"sleep", "0.040"}, function()
+  noctalia.runAsync("sleep 0.040", function()
     if isOpen and navToken == cur then
       displayedIndex = selectedIndex
       render()
@@ -688,7 +691,7 @@ local function backToFolders()
   viewMode = "folders"
   isScanning = true
   render()
-  noctalia.runAsync({"sleep", "0.020"}, function()
+  noctalia.runAsync("sleep 0.020", function()
     loadAllFolders()
   end)
 end
@@ -765,7 +768,7 @@ local function submitAddCollection()
   isScanning = true
   render()
 
-  noctalia.runAsync({"sleep", "0.020"}, function()
+  noctalia.runAsync("sleep 0.020", function()
     loadAllFolders()
   end)
 end
