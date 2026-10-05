@@ -861,7 +861,7 @@ render = function()
       local paletteSelectorControl
       if addPaletteType == "none" then
         paletteSelectorControl = ui.row({
-          width = 496,
+          width = 536,
           height = 36,
           paddingH = 12,
           align = "center",
@@ -882,7 +882,7 @@ render = function()
           key = "palette_selector_" .. addPaletteType,
           options = displayOptions,
           placeholder = tr("panel.select_placeholder") or "Selecciona una paleta...",
-          width = 496,
+          width = 536,
           onChange = function(idx)
             local n = tonumber(idx)
             if n ~= nil then
@@ -905,7 +905,7 @@ render = function()
         ui.row({
           align = "center",
           justify = "space_between",
-          width = 496,
+          width = 536,
         }, {
           ui.row({
             align = "center",
@@ -935,7 +935,7 @@ render = function()
             key = "add_folder_input",
             placeholder = tr("panel.folder_path_placeholder"),
             value = addFolderPath,
-            width = 496,
+            width = 536,
             onChange = function(val)
               addFolderPath = val or ""
               addErrorMessage = ""
@@ -1053,7 +1053,7 @@ render = function()
       }, {
         ui.column({
           key = "add_collection_card",
-          width = 540,
+          width = 580,
           gap = 16,
           padding = 22,
           radius = getCornerRadius and getCornerRadius(16) or 16,
