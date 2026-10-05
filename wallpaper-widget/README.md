@@ -29,7 +29,7 @@ noctalia msg panel-toggle ezequielgk/wallpaper-widget:hub
   - `Esc`: Close the panel.
 
 #### Level 2: Wallpapers Carousel
-- **Original Clean Carousel**: Clean 3-card horizontal layout with direct image rendering.
+- **Spotlight Center Card**: Clean 3-card horizontal layout with direct image rendering.
 - **Active Indicator**: Highlights the currently active wallpaper with the primary border and an `ACTIVE` badge.
 - **Favorite Badge & Toggle**: A clean badge located in the info section below the spotlight card (`star` outline when not favorited, `star-filled` with primary accent when favorited).
 - **Auto-Palette Switch**: Applying a wallpaper automatically applies the folder's configured palette in Noctalia.
@@ -50,33 +50,15 @@ noctalia msg panel-toggle ezequielgk/wallpaper-widget:hub
 
 ## Configuration (Settings -> Plugins -> Wallpaper Widget)
 
-All settings in Noctalia's plugin menu are clean and global:
-
-- **`wallpaper_dir`**: Default base wallpaper directory (automatically scans subfolders).
+- **`wallpaper_dir`**: Default base wallpaper directory.
 - **`apply_palette`**: Automatically apply the assigned palette to Noctalia when choosing a wallpaper.
-- **`notify_on_change`**: Send desktop notification when switching wallpaper or modifying favorites.
+- **`notify_on_change`**: Send desktop notification when switching wallpaper, favorites, or adding collections.
 - **`close_on_apply`**: Automatically close the carousel after applying a wallpaper.
+- **`+ Add Collection: Folder`**: Select a folder to add to your collections.
+- **`+ Add Collection: Palette Type`**: Choose palette type (`Built-in`, `Wallpaper dynamic`, `Community`, `Custom`).
+- **`+ Add Collection: Palette Name`**: Name of the palette (e.g. `Nord`, `Gruvbox`, `Dim`, `soft`). Leave empty to match folder name.
 
-### Custom Collections File (Optional)
-
-To define explicit collections, you can place a file at `~/.config/noctalia/wallpaper-collections.json`:
-
-```json
-[
-  {
-    "name": "Nord",
-    "path": "~/Imágenes/Wallpapers/Nord",
-    "palette_type": "builtin",
-    "palette": "Nord"
-  },
-  {
-    "name": "Slatemist",
-    "path": "~/Imágenes/Wallpapers/bjork/Slatemist/dark",
-    "palette_type": "custom",
-    "palette": "Dim"
-  }
-]
-```
+> **Note**: To modify or remove collections, edit `~/.config/noctalia/wallpaper-collections.json`.
 
 Favorites are automatically persisted in `~/.config/noctalia/wallpaper-widget-favorites.json`.
 

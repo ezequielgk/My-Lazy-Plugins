@@ -143,6 +143,75 @@ local function resolveFolderPalette(folderName)
   return { source = "wallpaper", name = "soft" }
 end
 
+local function loadCollectionsFile()
+  if not noctalia.fileExists(collectionsPath) then
+    return {}
+  end
+  local content = noctalia.readFile(collectionsPath)
+  if not content or content == "" then
+    return {}
+  end
+  local ok, data = pcall(function() return noctalia.json.decode(content) end)
+  if ok and type(data) == "table" then
+    return data
+  end
+  return {}
+end
+
+local function saveCollectionsFile(list)
+  local ok, encoded = pcall(function() return noctalia.json.encode(list) end)
+  if ok and encoded then
+    noctalia.writeFile(collectionsPath, encoded)
+  end
+end
+
+local function processAddedFolderSetting()
+  local addPath = noctalia.getConfig("add_folder_path")
+  if type(addPath) ~= "string" or addPath == "" then
+    return
+  end
+
+  local expPath = noctalia.expandPath(addPath)
+  local info = noctalia.fileInfo(expPath)
+  if not info or not info.isDir then
+    return
+  end
+
+  local addType = noctalia.getConfig("add_palette_type") or "builtin"
+  local addName = noctalia.getConfig("add_palette_name") or ""
+  local folderBaseName = expPath:match("([^/]+)$") or "Collection"
+  if addName == "" then
+    addName = (addType == "wallpaper") and "soft" or folderBaseName
+  end
+
+  local list = loadCollectionsFile()
+  local exists = false
+  for _, item in ipairs(list) do
+    if item.path == expPath then
+      item.name = folderBaseName
+      item.palette_type = addType
+      item.palette = addName
+      exists = true
+      break
+    end
+  end
+
+  if not exists then
+    table.insert(list, {
+      name = folderBaseName,
+      path = expPath,
+      palette_type = addType,
+      palette = addName,
+    })
+  end
+
+  saveCollectionsFile(list)
+
+  if noctalia.getConfig("notify_on_change") ~= false then
+    noctalia.notify(tr("panel.title"), tr("notify.collection_added") .. ": " .. folderBaseName)
+  end
+end
+
 local function getThumbPath(wallpaperPath)
   local h = 2166136261
   for i = 1, #wallpaperPath do
@@ -318,45 +387,41 @@ local function loadAllFolders()
   isScanning = true
   loadFavorites()
   loadCustomPalettes()
+  processAddedFolderSetting()
 
   local folderList = {}
 
-  -- 1. Check collections file (~/.config/noctalia/wallpaper-collections.json)
-  if noctalia.fileExists(collectionsPath) then
-    local content = noctalia.readFile(collectionsPath)
-    if content and content ~= "" then
-      local ok, data = pcall(function() return noctalia.json.decode(content) end)
-      if ok and type(data) == "table" and #data > 0 then
-        for _, entry in ipairs(data) do
-          if entry.path and entry.path ~= "" then
-            local expDir = noctalia.expandPath(entry.path)
-            local dInfo = noctalia.fileInfo(expDir)
-            if dInfo and dInfo.isDir then
-              local wps = {}
-              scanImagesInDir(expDir, wps, 0)
-              if #wps > 0 then
-                table.sort(wps, function(a, b) return a.sortKey < b.sortKey end)
-                local fName = entry.name or expDir:match("([^/]+)$") or "Collection"
-                local palType = entry.palette_type or "builtin"
-                local palName = (entry.palette and entry.palette ~= "") and entry.palette or fName
-                table.insert(folderList, {
-                  name = fName,
-                  path = expDir,
-                  coverPath = wps[1].path,
-                  count = #wps,
-                  wallpapers = wps,
-                  palette = { source = palType, name = palName },
-                  sortKey = makeSortKey(fName),
-                })
-              end
-            end
+  -- 1. Load collections from ~/.config/noctalia/wallpaper-collections.json
+  local customCollections = loadCollectionsFile()
+  if #customCollections > 0 then
+    for _, entry in ipairs(customCollections) do
+      if entry.path and entry.path ~= "" then
+        local expDir = noctalia.expandPath(entry.path)
+        local dInfo = noctalia.fileInfo(expDir)
+        if dInfo and dInfo.isDir then
+          local wps = {}
+          scanImagesInDir(expDir, wps, 0)
+          if #wps > 0 then
+            table.sort(wps, function(a, b) return a.sortKey < b.sortKey end)
+            local fName = entry.name or expDir:match("([^/]+)$") or "Collection"
+            local palType = entry.palette_type or "builtin"
+            local palName = (entry.palette and entry.palette ~= "") and entry.palette or fName
+            table.insert(folderList, {
+              name = fName,
+              path = expDir,
+              coverPath = wps[1].path,
+              count = #wps,
+              wallpapers = wps,
+              palette = { source = palType, name = palName },
+              sortKey = makeSortKey(fName),
+            })
           end
         end
       end
     end
   end
 
-  -- 2. Fallback: Scan wallpaper_dir subfolders if no collections file is used
+  -- 2. Fallback: if no custom collections exist, scan subfolders of wallpaper_dir
   if #folderList == 0 then
     local baseDir = noctalia.getConfig("wallpaper_dir")
     if type(baseDir) == "string" and baseDir ~= "" then
@@ -862,7 +927,6 @@ render = function()
       }),
     }),
 
-    -- Center card restored to original direct ui.image inside column
     ui.column({
       key = "card-center",
       align = "center",
@@ -907,7 +971,6 @@ render = function()
     }),
   })
 
-  -- Info section below the carousel with ACTIVE badge and FAVORITE badge inside info section
   local badgesRow = ui.row({
     align = "center",
     justify = "center",

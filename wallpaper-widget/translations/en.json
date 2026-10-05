@@ -2,7 +2,8 @@
   "notify": {
     "switched": "Wallpaper Switched",
     "favorite_added": "Added to Favorites",
-    "favorite_removed": "Removed from Favorites"
+    "favorite_removed": "Removed from Favorites",
+    "collection_added": "Collection Added"
   },
   "panel": {
     "active": "ACTIVE",
@@ -11,7 +12,7 @@
     "empty": "No wallpapers found in directory.",
     "empty_hint": "Add images (.png, .jpg, .jpeg, .webp) to your wallpapers folder.",
     "empty_folders": "No wallpaper folders found.",
-    "empty_folders_hint": "Add subfolders with images in your wallpapers folder or in ~/.config/noctalia/wallpaper-collections.json",
+    "empty_folders_hint": "Add subfolders in your wallpapers folder or add collections in plugin settings.",
     "folders_count": "folders",
     "folder_hint": "←  →  ↑  ↓ to browse   ·   Enter to open   ·   Esc to close",
     "hint": "←  →  ↑  ↓ to browse   ·   Enter to apply   ·   F favorite   ·   Del back   ·   Space random",
@@ -27,7 +28,7 @@
   "settings": {
     "wallpaper_dir": {
       "label": "Wallpaper Directory",
-      "description": "Path to your wallpapers folder containing collection subfolders. Leave empty to use Noctalia's default."
+      "description": "Path to your wallpapers folder. Leave empty to use Noctalia's default."
     },
     "apply_palette": {
       "label": "Apply Color Palette",
@@ -40,7 +41,23 @@
     "close_on_apply": {
       "label": "Close on Apply",
       "description": "Automatically close the Wallpaper Widget carousel after applying a wallpaper."
-    }
+    },
+    "add_folder_path": {
+      "label": "+ Add Collection: Folder",
+      "description": "Select a folder to add to your collections. (To modify or delete collections, edit ~/.config/noctalia/wallpaper-collections.json)."
+    },
+    "add_palette_type": {
+      "label": "+ Add Collection: Palette Type",
+      "description": "Choose palette source type (Built-in, Wallpaper dynamic, Community, or Custom)."
+    },
+    "add_palette_name": {
+      "label": "+ Add Collection: Palette Name",
+      "description": "Name of the palette (e.g. Nord, Gruvbox, Dim, soft). Leave empty to match folder name."
+    },
+    "type_builtin": "Built-in",
+    "type_wallpaper": "Wallpaper (Dynamic)",
+    "type_community": "Community",
+    "type_custom": "Custom"
   },
   "shortcut": {
     "label": "Wallpaper Widget"

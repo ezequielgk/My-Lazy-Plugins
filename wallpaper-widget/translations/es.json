@@ -2,7 +2,8 @@
   "notify": {
     "switched": "Fondo cambiado",
     "favorite_added": "Añadido a favoritos",
-    "favorite_removed": "Eliminado de favoritos"
+    "favorite_removed": "Eliminado de favoritos",
+    "collection_added": "Colección añadida"
   },
   "panel": {
     "active": "ACTIVO",
@@ -11,7 +12,7 @@
     "empty": "No se encontraron fondos en el directorio.",
     "empty_hint": "Añade imágenes (.png, .jpg, .jpeg, .webp) a tu carpeta de fondos.",
     "empty_folders": "No se encontraron carpetas de fondos.",
-    "empty_folders_hint": "Añade subcarpetas con imágenes o configúralas en ~/.config/noctalia/wallpaper-collections.json",
+    "empty_folders_hint": "Añade subcarpetas con imágenes o añade colecciones desde los ajustes del plugin.",
     "folders_count": "carpetas",
     "folder_hint": "←  →  ↑  ↓ explorar   ·   Enter entrar   ·   Esc cerrar",
     "hint": "←  →  ↑  ↓ explorar   ·   Enter aplicar   ·   F favorito   ·   Del volver   ·   Espacio aleatorio",
@@ -27,7 +28,7 @@
   "settings": {
     "wallpaper_dir": {
       "label": "Directorio de Fondos",
-      "description": "Ruta de la carpeta de fondos con subcarpetas de colecciones. Déjala vacía para usar la de Noctalia."
+      "description": "Ruta de la carpeta de fondos. Déjala vacía para usar la de Noctalia."
     },
     "apply_palette": {
       "label": "Aplicar Paleta de Color",
@@ -40,7 +41,23 @@
     "close_on_apply": {
       "label": "Cerrar al Aplicar",
       "description": "Cierra automáticamente el panel tras aplicar un fondo."
-    }
+    },
+    "add_folder_path": {
+      "label": "+ Añadir Colección: Carpeta",
+      "description": "Selecciona una carpeta para añadirla. (Para modificar o eliminar colecciones existentes, edita ~/.config/noctalia/wallpaper-collections.json)."
+    },
+    "add_palette_type": {
+      "label": "+ Añadir Colección: Tipo de Paleta",
+      "description": "Tipo de paleta para esta colección (Integrada, Fondo dinámico, Comunidad o Personalizada)."
+    },
+    "add_palette_name": {
+      "label": "+ Añadir Colección: Nombre de Paleta",
+      "description": "Nombre de la paleta (ej. Nord, Gruvbox, Dim, soft). Déjalo vacío para usar el nombre de la carpeta."
+    },
+    "type_builtin": "Integrada",
+    "type_wallpaper": "Fondo (Dinámica)",
+    "type_community": "Comunidad",
+    "type_custom": "Personalizada"
   },
   "shortcut": {
     "label": "Wallpaper Widget"
