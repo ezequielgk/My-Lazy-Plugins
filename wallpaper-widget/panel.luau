@@ -566,7 +566,8 @@ local function refreshIndex()
   if #dirsToScan > 0 then
     local dirsStr = ""
     for _, d in ipairs(dirsToScan) do dirsStr = dirsStr .. shellQuote(d) .. " " end
-    local cmd = string.format("find %s -maxdepth 2 -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) ! -path '*/.*' 2>/dev/null", dirsStr)
+    local findCmd = string.format("find %s -maxdepth 2 -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) ! -path '*/.*' 2>/dev/null", dirsStr)
+    local cmd = "bash -c " .. shellQuote(findCmd)
     
     noctalia.runAsync(cmd, function(res)
       if token ~= currentGenToken then return end
@@ -740,6 +741,49 @@ local function submitAddCollection()
   end
 
   saveCollectionsFile(list)
+
+  -- Immediately scan the newly added directory so it's populated without any delay
+  local findNew = string.format("find %s -maxdepth 2 -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) ! -path '*/.*' 2>/dev/null", shellQuote(expPath))
+  local scanScript = cacheDir .. "/scan_new.sh"
+  noctalia.writeFile(scanScript, findNew)
+  noctalia.runAsync("bash " .. shellQuote(scanScript), function(res)
+    if res and res.exitCode == 0 and res.stdout then
+      local changed = false
+      for path in res.stdout:gmatch("[^\r\n]+") do
+        local dir, file = path:match("^(.*)/([^/]+)$")
+        if dir and file then
+          if not indexCache.folders[dir] then indexCache.folders[dir] = {} end
+          local clean = file:gsub("%.%w+$", "")
+          table.insert(indexCache.folders[dir], {
+            path = path,
+            filename = file,
+            name = clean,
+            sortKey = makeSortKey(clean)
+          })
+          changed = true
+        end
+      end
+      if changed then
+        for _, wps in pairs(indexCache.folders) do
+          table.sort(wps, function(a, b) return a.sortKey < b.sortKey end)
+        end
+        saveIndex()
+        local t, b, ic, p = getActiveBaseDirs()
+        rebuildFoldersFromCache(t, b, ic, p)
+        -- Select the newly added folder
+        for i, f in ipairs(allFolders) do
+          if f.path == expPath then
+            selectedFolderIndex = i
+            displayedFolderIndex = i
+            widgetState.last_folder_path = expPath
+            saveState()
+            break
+          end
+        end
+        if render and isOpen then render() end
+      end
+    end
+  end)
 
   if noctalia.getConfig("notify_on_change") ~= false then
     noctalia.notify(tr("panel.title"), tr("notify.collection_added") .. ": " .. folderBaseName)
