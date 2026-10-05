@@ -682,123 +682,74 @@ local function openAddCollection()
 end
 
 local function submitAddCollection()
-  local noctalia = require("@noctalia")
-  local debugLog = "submitAddCollection called:\naddFolderPath=" .. tostring(addFolderPath) .. "\naddPaletteType=" .. tostring(addPaletteType) .. "\naddPaletteName=" .. tostring(addPaletteName) .. "\n"
-  noctalia.writeFile("/tmp/add_collection_debug.log", debugLog)
-  if addPaletteType ~= "none" and (not addPaletteName or addPaletteName == "") then
-    addErrorMessage = tr("panel.select_palette_error") or "Elige una paleta"
-    if render and isOpen then render() end
-    return
-  end
-  local trimmedPath = (addFolderPath or ""):match("^%s*(.-)%s*$") or ""
-  if trimmedPath == "" then
-    addErrorMessage = tr("panel.invalid_folder")
-    if render and isOpen then render() end
-    return
-  end
-
-  local expPath = noctalia.expandPath(trimmedPath):gsub("/+$", "")
-  local info = noctalia.fileInfo(expPath)
-  if (not info or not info.isDir) and not expPath:match("^/") then
-    local altPath = (home .. "/" .. trimmedPath):gsub("/+$", "")
-    local altInfo = noctalia.fileInfo(altPath)
-    if altInfo and altInfo.isDir then
-      expPath = altPath
-      info = altInfo
-    end
-  end
-
-  if not info or not info.isDir then
-    -- Fallback: check with noctalia.fileExists if fileInfo fails
-    if not noctalia.fileExists(expPath) then
-      addErrorMessage = tr("panel.invalid_folder")
-      local f = io.open("/tmp/add_collection_debug.log", "a")
-      if f then f:write("Failed path validation for: " .. expPath .. "\n"); f:close() end
+  local ok, err = pcall(function()
+    if addPaletteType ~= "none" and (not addPaletteName or addPaletteName == "") then
+      addErrorMessage = tr("panel.select_palette_error") or "Elige una paleta"
       if render and isOpen then render() end
       return
     end
-  end
 
-  local folderBaseName = expPath:match("([^/]+)$") or "Collection"
-  local finalPaletteName = addPaletteName
-  if addPaletteType == "none" then
-    finalPaletteName = "none"
-  elseif not finalPaletteName or finalPaletteName == "" then
-    finalPaletteName = (addPaletteType == "wallpaper") and "soft" or folderBaseName
-  end
-
-  local list = loadCollectionsFile()
-  local exists = false
-  for _, item in ipairs(list) do
-    if item.path == expPath then
-      item.name = folderBaseName
-      item.palette_type = addPaletteType
-      item.palette = finalPaletteName
-      exists = true
-      break
+    local trimmedPath = (addFolderPath or ""):match("^%s*(.-)%s*$") or ""
+    if trimmedPath == "" then
+      addErrorMessage = tr("panel.invalid_folder")
+      if render and isOpen then render() end
+      return
     end
-  end
 
-  if not exists then
-    table.insert(list, {
-      name = folderBaseName,
-      path = expPath,
-      palette_type = addPaletteType,
-      palette = finalPaletteName,
-    })
-  end
-
-  saveCollectionsFile(list)
-
-  -- Immediately scan the newly added directory so it's populated without any delay
-  local findNew = string.format("find %s -maxdepth 2 -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) ! -path '*/.*' 2>/dev/null", shellQuote(expPath))
-  local scanScript = cacheDir .. "/scan_new.sh"
-  noctalia.writeFile(scanScript, findNew)
-  noctalia.runAsync("bash " .. shellQuote(scanScript), function(res)
-    if res and res.exitCode == 0 and res.stdout then
-      local changed = false
-      for path in res.stdout:gmatch("[^\r\n]+") do
-        local dir, file = path:match("^(.*)/([^/]+)$")
-        if dir and file then
-          if not indexCache.folders[dir] then indexCache.folders[dir] = {} end
-          local clean = file:gsub("%.%w+$", "")
-          table.insert(indexCache.folders[dir], {
-            path = path,
-            filename = file,
-            name = clean,
-            sortKey = makeSortKey(clean)
-          })
-          changed = true
-        end
-      end
-      if changed then
-        for _, wps in pairs(indexCache.folders) do
-          table.sort(wps, function(a, b) return a.sortKey < b.sortKey end)
-        end
-        saveIndex()
-        local t, b, ic, p = getActiveBaseDirs()
-        rebuildFoldersFromCache(t, b, ic, p)
-        -- Select the newly added folder
-        for i, f in ipairs(allFolders) do
-          if f.path == expPath then
-            selectedFolderIndex = i
-            displayedFolderIndex = i
-            widgetState.last_folder_path = expPath
-            saveState()
-            break
-          end
-        end
+    local expPath = noctalia.expandPath(trimmedPath):gsub("/+$", "")
+    if not noctalia.fileExists(expPath) then
+      local altPath = (home .. "/" .. trimmedPath):gsub("/+$", "")
+      if noctalia.fileExists(altPath) then
+        expPath = altPath
+      else
+        addErrorMessage = tr("panel.invalid_folder")
         if render and isOpen then render() end
+        return
       end
     end
+
+    local folderBaseName = expPath:match("([^/]+)$") or "Collection"
+    local finalPaletteName = addPaletteName
+    if addPaletteType == "none" then
+      finalPaletteName = "none"
+    elseif not finalPaletteName or finalPaletteName == "" then
+      finalPaletteName = (addPaletteType == "wallpaper") and "soft" or folderBaseName
+    end
+
+    local list = loadCollectionsFile()
+    local exists = false
+    for _, item in ipairs(list) do
+      if item.path == expPath then
+        item.name = folderBaseName
+        item.palette_type = addPaletteType
+        item.palette = finalPaletteName
+        exists = true
+        break
+      end
+    end
+
+    if not exists then
+      table.insert(list, {
+        name = folderBaseName,
+        path = expPath,
+        palette_type = addPaletteType,
+        palette = finalPaletteName,
+      })
+    end
+
+    saveCollectionsFile(list)
+
+    if noctalia.getConfig("notify_on_change") ~= false then
+      noctalia.notify(tr("panel.title"), tr("notify.collection_added") .. ": " .. folderBaseName)
+    end
+
+    viewMode = "folders"
+    refreshIndex()
   end)
-
-  if noctalia.getConfig("notify_on_change") ~= false then
-    noctalia.notify(tr("panel.title"), tr("notify.collection_added") .. ": " .. folderBaseName)
+  if not ok then
+    addErrorMessage = "Error: " .. tostring(err)
+    if render and isOpen then render() end
   end
-
-  viewMode = "folders"
-  refreshIndex()
 end
 
 local function applyFolderPalette(palette)
