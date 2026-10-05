@@ -16,7 +16,7 @@ local isOpen = false
 -- Add collection state
 local addFolderPath = ""
 local addPaletteType = "builtin"
-local addPaletteName = "Nord"
+local addPaletteName = ""
 local addPaletteSearch = ""
 local addErrorMessage = ""
 
@@ -175,6 +175,7 @@ local function getPalettesForType(pType)
   elseif pType == "wallpaper" then return WALLPAPER_PALETTES
   elseif pType == "custom" then return getCustomPalettes()
   elseif pType == "community" then return getCommunityPalettes()
+  elseif pType == "none" then return {}
   end
   return {}
 end
@@ -451,10 +452,26 @@ local function rebuildFoldersFromCache(targets, baseDir, isCollection, palettes)
     end
   end
 
+  local addedDirs = {}
   for _, exp in ipairs(targets) do
     if indexCache.folders[exp] then
       local entry = buildFolderEntry(exp, indexCache.folders[exp], isCollection[exp], palettes[exp])
-      if entry then table.insert(folderList, entry) end
+      if entry then
+        table.insert(folderList, entry)
+        addedDirs[exp] = true
+      end
+    end
+    -- Also include direct subfolders of the collection if they have wallpapers
+    for dir, wps in pairs(indexCache.folders) do
+      if not addedDirs[dir] and dir:find(exp .. "/", 1, true) == 1 then
+        local subName = dir:match("([^/]+)$") or dir
+        local parentColName = isCollection[exp] or exp:match("([^/]+)$") or "Collection"
+        local entry = buildFolderEntry(dir, wps, parentColName .. " / " .. subName, palettes[exp])
+        if entry then
+          table.insert(folderList, entry)
+          addedDirs[dir] = true
+        end
+      end
     end
   end
 
@@ -664,7 +681,7 @@ local function openAddCollection()
 end
 
 local function submitAddCollection()
-  if not addPaletteName or addPaletteName == "" then
+  if addPaletteType ~= "none" and (not addPaletteName or addPaletteName == "") then
     addErrorMessage = tr("panel.select_palette_error") or "Elige una paleta"
     if render and isOpen then render() end
     return
@@ -695,7 +712,9 @@ local function submitAddCollection()
 
   local folderBaseName = expPath:match("([^/]+)$") or "Collection"
   local finalPaletteName = addPaletteName
-  if not finalPaletteName or finalPaletteName == "" then
+  if addPaletteType == "none" then
+    finalPaletteName = "none"
+  elseif not finalPaletteName or finalPaletteName == "" then
     finalPaletteName = (addPaletteType == "wallpaper") and "soft" or folderBaseName
   end
 
@@ -839,27 +858,48 @@ render = function()
         end
       end
 
-      local selectProps = {
-        key = "palette_selector_" .. addPaletteType,
-        options = displayOptions,
-        placeholder = tr("panel.select_placeholder") or "Selecciona una paleta...",
-        width = 496,
-        onChange = function(idx)
-          local n = tonumber(idx)
-          if n ~= nil then
-            local chosen = realPalettes[math.floor(n) + 1]
-            if type(chosen) == "string" and chosen ~= "" then
-              addPaletteName = chosen
-              addErrorMessage = ""
-              if render and isOpen then render() end
+      local paletteSelectorControl
+      if addPaletteType == "none" then
+        paletteSelectorControl = ui.row({
+          width = 496,
+          height = 36,
+          paddingH = 12,
+          align = "center",
+          radius = getCornerRadius and getCornerRadius(8) or 8,
+          fill = "surface_variant/0.2",
+          borderWidth = 1,
+          border = "outline",
+        }, {
+          ui.glyph({ name = "palette-off", size = 16, color = "on_surface_variant" }),
+          ui.label({
+            text = " " .. (tr("panel.palette_source_none") or "Ninguna") .. " (conserva tu tema actual)",
+            fontSize = 12,
+            color = "on_surface_variant",
+          }),
+        })
+      else
+        local selectProps = {
+          key = "palette_selector_" .. addPaletteType,
+          options = displayOptions,
+          placeholder = tr("panel.select_placeholder") or "Selecciona una paleta...",
+          width = 496,
+          onChange = function(idx)
+            local n = tonumber(idx)
+            if n ~= nil then
+              local chosen = realPalettes[math.floor(n) + 1]
+              if type(chosen) == "string" and chosen ~= "" then
+                addPaletteName = chosen
+                addErrorMessage = ""
+                if render and isOpen then render() end
+              end
             end
           end
+        }
+        if selIndex ~= nil then
+          selectProps.selectedIndex = selIndex
         end
-      }
-      if selIndex ~= nil then
-        selectProps.selectedIndex = selIndex
+        paletteSelectorControl = ui.select(selectProps)
       end
-      local paletteSelectorControl = ui.select(selectProps)
 
       local cardItems = {
         ui.row({
@@ -946,6 +986,17 @@ render = function()
               onClick = function()
                 addPaletteType = "community"
                 addPaletteName = ""
+                if render and isOpen then render() end
+              end,
+            }),
+            ui.button({
+              text = tr("panel.palette_source_none"),
+              variant = (addPaletteType == "none") and "primary" or "ghost",
+              controlSize = "sm",
+              onClick = function()
+                addPaletteType = "none"
+                addPaletteName = ""
+                addErrorMessage = ""
                 if render and isOpen then render() end
               end,
             }),
