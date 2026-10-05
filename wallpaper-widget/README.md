@@ -1,6 +1,6 @@
 # Wallpaper Widget
 
-A cinematic horizontal wallpaper switcher carousel and interactive bar widget for Noctalia with automatic palette synchronization and folder collections.
+A cinematic horizontal wallpaper switcher carousel and interactive bar widget for Noctalia with automatic palette synchronization and custom folder slots.
 
 ## Plugin
 
@@ -12,63 +12,51 @@ A cinematic horizontal wallpaper switcher carousel and interactive bar widget fo
 
 ## Usage
 
-Wallpaper Widget provides convenient ways to browse collections, switch wallpapers, and automatically adapt your Noctalia color palette:
-
 ### Visual 2-Level Carousel Panel
-
-Open the floating carousel panel directly or bind it to a custom compositor keybind:
 
 ```sh
 noctalia msg panel-toggle ezequielgk/wallpaper-widget:hub
 ```
 
 #### Level 1: Folder / Palette Collections Carousel
-- **Cover Previews**: Displays your wallpaper folders (e.g. *Nord*, *Gruvbox*, *Tokyo Night*, *Nature*) with a thumbnail cover card and the assigned palette badge.
-- **Palette Mapping**: Automatically pairs folder names with matching Noctalia palettes (*built-in*, *custom*, *community*, or dynamic *wallpaper*).
-- **Navigation**:
-  - `←` / `→` (or `↑` / `↓`): Browse between folders.
-  - `Enter`: Open the selected folder and view its wallpapers.
-  - `P`: Cycle/change the assigned palette for the highlighted folder.
+- **Aesthetic**: Follows native Noctalia UI guidelines with clean borders matching your desktop theme.
+- **Preview**: Cards spotlight each collection cover with its assigned palette badge underneath.
+- **Controls**:
+  - `←` / `→` (or `↑` / `↓`): Browse between collections.
+  - `Enter`: Open the selected folder and browse its wallpapers.
   - `Space`: Pick a random folder.
   - `Esc`: Close the panel.
 
 #### Level 2: Wallpapers Carousel
-- **Cinematic Focus**: Spotlight center card with adjacent previews.
-- **Active Indicator**: Highlights the currently active desktop wallpaper with an accent border.
-- **Auto-Palette Switch**: Applying a wallpaper also switches Noctalia's color scheme to match the collection's palette.
-- **Navigation**:
+- **Original Layout**: Clean 3-card horizontal carousel.
+- **Active Indicator**: Highlights the currently active wallpaper with the primary border.
+- **Auto-Palette Switch**: Applying a wallpaper automatically applies the folder's configured palette in Noctalia.
+- **Controls**:
   - `←` / `→` (or `↑` / `↓`): Browse wallpapers.
-  - `Enter`: Apply the selected wallpaper and its assigned color palette.
+  - `Enter`: Apply the selected wallpaper and its assigned palette.
   - `Del` / `Backspace`: Return back to the Collections view.
   - `Space`: Apply a random wallpaper from this folder.
   - `Esc`: Close the panel.
 
 ### Bar Widget
 
-Add the `widget` entry to your Noctalia bar:
 - **Left click**: Toggles the Wallpaper Widget carousel panel.
 - **Right click**: Immediately picks and applies a random wallpaper.
 - **Scroll wheel up / down**: Cycles to the next or previous wallpaper.
-- **Tooltip**: Displays the currently active wallpaper filename and control tips.
+- **Tooltip**: Displays current wallpaper and quick actions.
 
-### Performance & Background Thumbnail Caching
+## Configuration (Settings -> Plugins -> Wallpaper Widget)
 
-Wallpaper Widget automatically generates and caches downscaled 512x288 thumbnails in `~/.cache/noctalia/wallpaper-widget/thumbnails/` for buttery-smooth 60 FPS carousel navigation:
-- **Low-Priority Background Processing**: Runs thumbnail jobs in the background with `nice -n 19` so your desktop compositor and user input never hitch.
-- **Auto-Detection**: Automatically detects `magick` (ImageMagick 7), `convert` (ImageMagick 6), or `ffmpeg`.
-- **Graceful Fallback**: If none of these image utilities are installed, Wallpaper Widget falls back to original wallpaper files with zero required dependencies.
+All collections and palette mappings are configured entirely in Noctalia's plugin settings:
 
-## Settings
-
-Configure Wallpaper Widget in **Settings -> Plugins -> Wallpaper Widget**:
-
-| Setting | Type | Default | Description |
-| --- | --- | --- | --- |
-| `wallpaper_dir` | `folder` | *(empty)* | Path to your wallpapers directory containing theme/palette subfolders. |
-| `apply_palette` | `bool` | `true` | Automatically switch Noctalia's color palette when applying a wallpaper. |
-| `default_palette_source` | `select` | `auto` | Fallback mode (`auto`, `wallpaper`, `none`) for folders without an explicit palette. |
-| `notify_on_change` | `bool` | `true` | Send a desktop notification whenever wallpaper or palette is switched. |
-| `close_on_apply` | `bool` | `false` | Automatically close the carousel after applying a wallpaper. |
+- **`wallpaper_dir`**: Default base wallpaper directory (used as fallback if no custom slots are configured).
+- **`apply_palette`**: Automatically apply the assigned palette to Noctalia when choosing a wallpaper.
+- **`notify_on_change`**: Send desktop notification when switching wallpaper.
+- **`close_on_apply`**: Automatically close the carousel after applying a wallpaper.
+- **Slots 1 to 8**:
+  - **Folder**: Path to the wallpaper folder for this slot.
+  - **Palette Type**: Select `Built-in`, `Wallpaper (Dynamic)`, `Community`, or `Custom`.
+  - **Palette Name**: The exact name of the palette (e.g. `Nord`, `Gruvbox`, `Dim`, `soft`). Leave empty to automatically use the folder's name.
 
 ## License
 

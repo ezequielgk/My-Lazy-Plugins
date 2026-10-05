@@ -32,24 +32,9 @@ local function makeSortKey(s)
   end)
 end
 
-local function normalizeName(s)
-  return s:lower():gsub("[%s_%-]", "")
-end
-
 local home = noctalia.getenv("HOME") or "~"
 local xdgCache = noctalia.getenv("XDG_CACHE_HOME")
 local cacheDir = (xdgCache and xdgCache ~= "" and xdgCache or (home .. "/.cache")) .. "/noctalia/wallpaper-widget/thumbnails"
-local xdgConfig = noctalia.getenv("XDG_CONFIG_HOME")
-local palettesDir = (xdgConfig and xdgConfig ~= "" and xdgConfig or (home .. "/.config")) .. "/noctalia/palettes"
-local mappingsPath = (xdgConfig and xdgConfig ~= "" and xdgConfig or (home .. "/.config")) .. "/noctalia/wallpaper-widget-palettes.json"
-
-local BUILTIN_PALETTES = {
-  "Nord", "Gruvbox", "Catppuccin", "Tokyo Night", "Everforest",
-  "Kanagawa", "Rose Pine", "Dracula", "Eldritch"
-}
-
-local knownCustomPalettes = {}
-local savedPaletteMappings = {}
 
 local cacheDirPrepared = false
 local function ensureCacheDir()
@@ -58,86 +43,6 @@ local function ensureCacheDir()
   if not noctalia.fileExists(cacheDir) then
     noctalia.runAsync("mkdir -p " .. shellQuote(cacheDir))
   end
-end
-
-local function loadCustomPalettes()
-  knownCustomPalettes = {}
-  local files = noctalia.listDir(palettesDir)
-  if files then
-    for _, f in ipairs(files) do
-      if f:match("%.json$") and f ~= "registry.json" and f ~= "_live_preview.json" then
-        local name = f:gsub("%.json$", "")
-        table.insert(knownCustomPalettes, name)
-      end
-    end
-  end
-end
-
-local function loadPaletteMappings()
-  savedPaletteMappings = {}
-  if noctalia.fileExists(mappingsPath) then
-    local content = noctalia.readFile(mappingsPath)
-    if content and content ~= "" then
-      local ok, data = pcall(function() return noctalia.json.decode(content) end)
-      if ok and type(data) == "table" then
-        savedPaletteMappings = data
-      end
-    end
-  end
-end
-
-local function savePaletteMappings()
-  local ok, encoded = pcall(function() return noctalia.json.encode(savedPaletteMappings) end)
-  if ok and encoded then
-    noctalia.writeFile(mappingsPath, encoded)
-  end
-end
-
-local function resolveFolderPalette(folderName)
-  local defSource = noctalia.getConfig("default_palette_source") or "auto"
-
-  -- 1. Explicit mapping saved by user
-  if savedPaletteMappings[folderName] then
-    local m = savedPaletteMappings[folderName]
-    if type(m) == "table" and m.source and m.name then
-      return m
-    end
-  end
-
-  local norm = normalizeName(folderName)
-
-  -- 2. Match with Built-in palettes
-  for _, bName in ipairs(BUILTIN_PALETTES) do
-    if norm == normalizeName(bName) then
-      return { source = "builtin", name = bName }
-    end
-  end
-
-  -- 3. Match with Custom / Community palettes in ~/.config/noctalia/palettes
-  for _, cName in ipairs(knownCustomPalettes) do
-    if norm == normalizeName(cName) then
-      return { source = "custom", name = cName }
-    end
-  end
-
-  -- 4. Fallback based on default_palette_source setting
-  if defSource == "none" then
-    return { source = "none", name = "none" }
-  end
-
-  return { source = "wallpaper", name = "soft" }
-end
-
-local function formatPaletteLabel(palette)
-  if not palette or palette.source == "none" then
-    return tr("panel.palette_source_none")
-  end
-  local srcKey = "panel.palette_source_" .. palette.source
-  local srcLabel = tr(srcKey) or palette.source
-  if palette.source == "wallpaper" then
-    return string.format("%s (%s)", srcLabel, palette.name or "soft")
-  end
-  return string.format("%s · %s", palette.name, srcLabel)
 end
 
 local function getThumbPath(wallpaperPath)
@@ -244,20 +149,6 @@ local function triggerBatchThumbnails(items)
   processNextChunk()
 end
 
-local function getWallpaperDir()
-  local configured = noctalia.getConfig("wallpaper_dir")
-  if type(configured) == "string" and configured ~= "" then
-    return noctalia.expandPath(configured)
-  end
-  if noctalia.wallpaperDirectory then
-    local ok, d = pcall(function() return noctalia.wallpaperDirectory() end)
-    if ok and type(d) == "string" and d ~= "" then
-      return d
-    end
-  end
-  return home .. "/Pictures/wallpapers"
-end
-
 local function isImage(name)
   local lower = name:lower()
   return lower:match("%.png$") ~= nil
@@ -329,67 +220,119 @@ end
 
 local function loadAllFolders()
   isScanning = true
-  loadCustomPalettes()
-  loadPaletteMappings()
-
-  local baseDir = getWallpaperDir()
-  local entries = noctalia.listDir(baseDir)
   local folderList = {}
-  local rootImages = {}
 
-  if entries then
-    for _, name in ipairs(entries) do
-      if name ~= "." and name ~= ".." and not name:match("^%.") then
-        local fullPath = baseDir .. "/" .. name
-        local info = noctalia.fileInfo(fullPath)
-        if info and info.isDir then
-          local wps = {}
-          scanImagesInDir(fullPath, wps, 0)
-          if #wps > 0 then
-            table.sort(wps, function(a, b) return a.sortKey < b.sortKey end)
-            local pal = resolveFolderPalette(name)
-            table.insert(folderList, {
-              name = name,
-              path = fullPath,
-              coverPath = wps[1].path,
-              count = #wps,
-              wallpapers = wps,
-              palette = pal,
-              sortKey = makeSortKey(name),
-            })
+  -- 1. Read slots from plugin settings
+  for i = 1, 8 do
+    local slotDir = noctalia.getConfig("slot_" .. i .. "_dir")
+    local slotType = noctalia.getConfig("slot_" .. i .. "_type") or "builtin"
+    local slotPalette = noctalia.getConfig("slot_" .. i .. "_palette") or ""
+
+    if type(slotDir) == "string" and slotDir ~= "" then
+      local expDir = noctalia.expandPath(slotDir)
+      local dirInfo = noctalia.fileInfo(expDir)
+      if dirInfo and dirInfo.isDir then
+        local wps = {}
+        scanImagesInDir(expDir, wps, 0)
+        if #wps > 0 then
+          table.sort(wps, function(a, b) return a.sortKey < b.sortKey end)
+          local folderName = expDir:match("([^/]+)$") or ("Slot " .. i)
+          local palName = (slotPalette ~= "") and slotPalette or folderName
+          if slotType == "wallpaper" and slotPalette == "" then
+            palName = "soft"
           end
-        elseif isImage(name) then
-          local cleanName = name:gsub("%.%w+$", "")
-          table.insert(rootImages, {
-            path = fullPath,
-            name = cleanName,
-            filename = name,
-            sortKey = makeSortKey(cleanName),
+          table.insert(folderList, {
+            name = folderName,
+            path = expDir,
+            coverPath = wps[1].path,
+            count = #wps,
+            wallpapers = wps,
+            palette = {
+              source = slotType,
+              name = palName,
+            },
+            sortKey = makeSortKey(folderName),
           })
         end
       end
     end
   end
 
-  if #rootImages > 0 then
-    table.sort(rootImages, function(a, b) return a.sortKey < b.sortKey end)
-    local rootName = baseDir:match("([^/]+)$") or "Wallpapers"
-    table.insert(folderList, 1, {
-      name = rootName,
-      path = baseDir,
-      coverPath = rootImages[1].path,
-      count = #rootImages,
-      wallpapers = rootImages,
-      palette = resolveFolderPalette(rootName),
-      sortKey = makeSortKey(rootName),
-    })
+  -- 2. Fallback: if no slots were configured, scan wallpaper_dir subfolders
+  if #folderList == 0 then
+    local baseDir = noctalia.getConfig("wallpaper_dir")
+    if type(baseDir) == "string" and baseDir ~= "" then
+      baseDir = noctalia.expandPath(baseDir)
+    elseif noctalia.wallpaperDirectory then
+      local ok, d = pcall(function() return noctalia.wallpaperDirectory() end)
+      if ok and type(d) == "string" and d ~= "" then
+        baseDir = d
+      end
+    end
+    if not baseDir or baseDir == "" then
+      baseDir = home .. "/Pictures/wallpapers"
+    end
+
+    local entries = noctalia.listDir(baseDir)
+    local rootImages = {}
+
+    if entries then
+      for _, name in ipairs(entries) do
+        if name ~= "." and name ~= ".." and not name:match("^%.") then
+          local fullPath = baseDir .. "/" .. name
+          local info = noctalia.fileInfo(fullPath)
+          if info and info.isDir then
+            local wps = {}
+            scanImagesInDir(fullPath, wps, 0)
+            if #wps > 0 then
+              table.sort(wps, function(a, b) return a.sortKey < b.sortKey end)
+              table.insert(folderList, {
+                name = name,
+                path = fullPath,
+                coverPath = wps[1].path,
+                count = #wps,
+                wallpapers = wps,
+                palette = {
+                  source = "builtin",
+                  name = name,
+                },
+                sortKey = makeSortKey(name),
+              })
+            end
+          elseif isImage(name) then
+            local cleanName = name:gsub("%.%w+$", "")
+            table.insert(rootImages, {
+              path = fullPath,
+              name = cleanName,
+              filename = name,
+              sortKey = makeSortKey(cleanName),
+            })
+          end
+        end
+      end
+    end
+
+    if #rootImages > 0 then
+      table.sort(rootImages, function(a, b) return a.sortKey < b.sortKey end)
+      local rootName = baseDir:match("([^/]+)$") or "Wallpapers"
+      table.insert(folderList, 1, {
+        name = rootName,
+        path = baseDir,
+        coverPath = rootImages[1].path,
+        count = #rootImages,
+        wallpapers = rootImages,
+        palette = {
+          source = "wallpaper",
+          name = "soft",
+        },
+        sortKey = makeSortKey(rootName),
+      })
+    end
   end
 
-  table.sort(folderList, function(a, b) return a.sortKey < b.sortKey end)
   allFolders = folderList
   isScanning = false
 
-  -- Find active folder matching current wallpaper
   refreshActiveWallpaper(function()
     if currentWallpaper ~= "" and #allFolders > 0 then
       for i, f in ipairs(allFolders) do
@@ -547,9 +490,8 @@ local function applyWallpaper(path)
 
   if noctalia.getConfig("notify_on_change") ~= false then
     local fname = path:match("([^/]+)$") or path
-    if activeFolder and activeFolder.palette and activeFolder.palette.source ~= "none" then
-      local palDesc = formatPaletteLabel(activeFolder.palette)
-      noctalia.notify(tr("panel.title"), string.format("%s: %s\n%s: %s", tr("notify.switched"), fname, tr("panel.palette"), palDesc))
+    if activeFolder and activeFolder.palette and activeFolder.palette.name ~= "" then
+      noctalia.notify(tr("panel.title"), string.format("%s: %s\n%s: %s", tr("notify.switched"), fname, tr("panel.palette"), activeFolder.palette.name))
     else
       noctalia.notify(tr("panel.title"), tr("notify.switched") .. ": " .. fname)
     end
@@ -587,58 +529,6 @@ local function applyRandomWallpaper()
   applyWallpaper(allWallpapers[randIdx].path)
 end
 
-local function cycleFolderPalette(folderIdx)
-  if #allFolders == 0 then return end
-  local f = allFolders[folderIdx]
-  if not f then return end
-
-  -- Cycle palette options:
-  -- 1) Built-in matched or first built-in
-  -- 2) Custom palettes
-  -- 3) Wallpaper dynamic (soft)
-  -- 4) None
-  local cur = f.palette or { source = "none", name = "none" }
-  local nextPal = { source = "wallpaper", name = "soft" }
-
-  if cur.source == "wallpaper" then
-    -- Try to set to Built-in Nord or first built-in
-    nextPal = { source = "builtin", name = BUILTIN_PALETTES[1] }
-  elseif cur.source == "builtin" then
-    -- Find index in builtins, or jump to custom if available
-    local bIdx = 1
-    for i, b in ipairs(BUILTIN_PALETTES) do
-      if b == cur.name then bIdx = i; break end
-    end
-    if bIdx < #BUILTIN_PALETTES then
-      nextPal = { source = "builtin", name = BUILTIN_PALETTES[bIdx + 1] }
-    elseif #knownCustomPalettes > 0 then
-      nextPal = { source = "custom", name = knownCustomPalettes[1] }
-    else
-      nextPal = { source = "none", name = "none" }
-    end
-  elseif cur.source == "custom" then
-    local cIdx = 1
-    for i, c in ipairs(knownCustomPalettes) do
-      if c == cur.name then cIdx = i; break end
-    end
-    if cIdx < #knownCustomPalettes then
-      nextPal = { source = "custom", name = knownCustomPalettes[cIdx + 1] }
-    else
-      nextPal = { source = "none", name = "none" }
-    end
-  else
-    -- was "none", cycle back to wallpaper
-    nextPal = { source = "wallpaper", name = "soft" }
-  end
-
-  f.palette = nextPal
-  savedPaletteMappings[f.name] = nextPal
-  savePaletteMappings()
-
-  noctalia.notify(tr("panel.title"), string.format("%s: %s → %s", f.name, tr("panel.palette"), formatPaletteLabel(nextPal)))
-  render()
-end
-
 render = function()
   if isScanning then
     panel.render(ui.column({
@@ -656,7 +546,6 @@ render = function()
 
   if viewMode == "folders" then
     if #allFolders == 0 then
-      local dir = getWallpaperDir()
       panel.render(ui.column({
         align = "center",
         justify = "center",
@@ -664,10 +553,9 @@ render = function()
         gap = 12,
         padding = 40,
       }, {
-        ui.glyph({ name = "folder-off", size = 48, color = "on_surface_variant" }),
+        ui.glyph({ name = "photo-off", size = 48, color = "on_surface_variant" }),
         ui.label({ text = tr("panel.empty_folders"), fontSize = 15, fontWeight = "bold", color = "on_surface" }),
         ui.label({ text = tr("panel.empty_folders_hint"), fontSize = 13, color = "on_surface_variant" }),
-        ui.label({ text = dir, fontSize = 11, color = "outline" }),
       }))
       return
     end
@@ -676,7 +564,7 @@ render = function()
     local fCenter = getDisplayedFolderAt(0)
     local fRight, idxRight = getDisplayedFolderAt(1)
 
-    local palLabel = formatPaletteLabel(fCenter.palette)
+    local palDisplayName = fCenter.palette and fCenter.palette.name or fCenter.name
 
     local carouselRow = ui.row({
       align = "center",
@@ -685,7 +573,7 @@ render = function()
       flexGrow = 1,
     }, {
       ui.column({
-        key = "folder-card-left",
+        key = "card-left",
         align = "center",
         width = 280,
         opacity = 0.55,
@@ -696,17 +584,17 @@ render = function()
         end,
       }, {
         ui.image({
-          key = "folder-img-left",
+          key = "img-left",
           path = resolveDisplayPath(fLeft.coverPath),
           width = 280,
           height = 158,
           fit = "cover",
-          radius = 12,
+          borderWidth = 0,
         }),
       }),
 
       ui.column({
-        key = "folder-card-center",
+        key = "card-center",
         align = "center",
         width = 460,
         onClick = function()
@@ -714,19 +602,18 @@ render = function()
         end,
       }, {
         ui.image({
-          key = "folder-img-center",
+          key = "img-center",
           path = resolveDisplayPath(fCenter.coverPath),
           width = 460,
           height = 259,
           fit = "cover",
-          radius = 16,
-          borderWidth = 2,
+          borderWidth = 3,
           border = "primary",
         }),
       }),
 
       ui.column({
-        key = "folder-card-right",
+        key = "card-right",
         align = "center",
         width = 280,
         opacity = 0.55,
@@ -737,12 +624,12 @@ render = function()
         end,
       }, {
         ui.image({
-          key = "folder-img-right",
+          key = "img-right",
           path = resolveDisplayPath(fRight.coverPath),
           width = 280,
           height = 158,
           fit = "cover",
-          radius = 12,
+          borderWidth = 0,
         }),
       }),
     })
@@ -753,35 +640,23 @@ render = function()
     }, {
       ui.row({
         align = "center",
-        gap = 8,
+        justify = "center",
+        height = 22,
       }, {
-        ui.glyph({ name = "folder", size = 18, color = "primary" }),
-        ui.label({
-          text = fCenter.name,
-          fontSize = 17,
-          fontWeight = "bold",
-          color = "on_surface",
-        }),
         ui.row({
           align = "center",
           gap = 4,
           paddingH = 8,
           paddingV = 2,
-          radius = 8,
           fill = "primary/0.2",
         }, {
-          ui.glyph({ name = "palette", size = 12, color = "primary" }),
-          ui.label({
-            text = palLabel,
-            fontSize = 11,
-            fontWeight = "bold",
-            color = "primary",
-          }),
+          ui.glyph({ name = "palette", size = 13, color = "primary" }),
+          ui.label({ text = palDisplayName, fontSize = 10, fontWeight = "bold", color = "primary" }),
         }),
       }),
 
       ui.label({
-        text = string.format("%d %s   ·   %d / %d", fCenter.count, tr("panel.wallpapers_count"), selectedFolderIndex, #allFolders),
+        text = tostring(selectedFolderIndex) .. " / " .. tostring(#allFolders),
         fontSize = 12,
         color = "on_surface_variant",
       }),
@@ -816,7 +691,7 @@ render = function()
     }, {
       ui.glyph({ name = "photo-off", size = 48, color = "on_surface_variant" }),
       ui.label({ text = tr("panel.empty"), fontSize = 15, fontWeight = "bold", color = "on_surface" }),
-      ui.label({ text = tr("panel.hint"), fontSize = 11, color = "on_surface_variant" }),
+      ui.label({ text = tr("panel.empty_hint"), fontSize = 13, color = "on_surface_variant" }),
     }))
     return
   end
@@ -826,36 +701,6 @@ render = function()
   local wpRight, idxRight = getDisplayedWallpaperAt(1)
 
   local isSelectedActive = (allWallpapers[selectedIndex].path == currentWallpaper)
-  local folderPalLabel = activeFolder and formatPaletteLabel(activeFolder.palette) or ""
-
-  local headerRow = ui.row({
-    align = "center",
-    justify = "space_between",
-  }, {
-    ui.row({
-      align = "center",
-      gap = 6,
-      onClick = function()
-        backToFolders()
-      end,
-    }, {
-      ui.glyph({ name = "arrow-left", size = 15, color = "primary" }),
-      ui.label({ text = tr("panel.back"), fontSize = 12, fontWeight = "bold", color = "primary" }),
-      ui.label({ text = "📁 " .. (activeFolder and activeFolder.name or ""), fontSize = 13, color = "on_surface" }),
-    }),
-
-    ui.row({
-      align = "center",
-      gap = 4,
-      paddingH = 8,
-      paddingV = 2,
-      radius = 8,
-      fill = "surface_variant/0.5",
-    }, {
-      ui.glyph({ name = "palette", size = 12, color = "on_surface_variant" }),
-      ui.label({ text = folderPalLabel, fontSize = 11, color = "on_surface_variant" }),
-    }),
-  })
 
   local carouselRow = ui.row({
     align = "center",
@@ -880,7 +725,6 @@ render = function()
         width = 280,
         height = 158,
         fit = "cover",
-        radius = 12,
         borderWidth = (wpLeft.path == currentWallpaper) and 2 or 0,
         border = (wpLeft.path == currentWallpaper) and "primary" or nil,
       }),
@@ -900,7 +744,6 @@ render = function()
         width = 460,
         height = 259,
         fit = "cover",
-        radius = 16,
         borderWidth = (wpCenter.path == currentWallpaper) and 3 or 1,
         border = (wpCenter.path == currentWallpaper) and "primary" or "outline",
       }),
@@ -923,7 +766,6 @@ render = function()
         width = 280,
         height = 158,
         fit = "cover",
-        radius = 12,
         borderWidth = (wpRight.path == currentWallpaper) and 2 or 0,
         border = (wpRight.path == currentWallpaper) and "primary" or nil,
       }),
@@ -944,7 +786,6 @@ render = function()
         gap = 4,
         paddingH = 8,
         paddingV = 2,
-        radius = 10,
         fill = "primary/0.2",
       }, {
         ui.glyph({ name = "check", size = 13, color = "primary" }),
@@ -971,7 +812,6 @@ render = function()
     align = "stretch",
     flexGrow = 1,
   }, {
-    headerRow,
     carouselRow,
     infoSection,
   }))
@@ -987,8 +827,6 @@ function onKey(chord, pressed)
       stepFolderSelection(1)
     elseif chord == "Return" then
       openFolder(selectedFolderIndex)
-    elseif chord == "p" or chord == "P" then
-      cycleFolderPalette(selectedFolderIndex)
     elseif chord == "Space" then
       if #allFolders > 0 then
         openFolder(math.random(1, #allFolders))
