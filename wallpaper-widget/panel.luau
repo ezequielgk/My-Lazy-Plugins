@@ -545,65 +545,66 @@ local function rebuildFoldersFromCache(targets, baseDir, isCollection, palettes)
   triggerBatchThumbnails(covers)
 end
 
-local function scanDirSync(d)
-  local files = noctalia.listDir(d)
-  if not files then return end
-  local wps = {}
-  for _, f in ipairs(files) do
-    if not f:match("^%.") and (f:match("%.jpe?g$") or f:match("%.png$") or f:match("%.webp$") or f:match("%.JPE?G$") or f:match("%.PNG$") or f:match("%.WEBP$")) then
-      local clean = f:gsub("%.%w+$", "")
-      table.insert(wps, {
-        path = d .. "/" .. f,
-        filename = f,
-        name = clean,
-        sortKey = makeSortKey(clean)
-      })
-    end
-  end
-  if #wps > 0 then
-    table.sort(wps, function(a, b) return a.sortKey < b.sortKey end)
-    indexCache.folders[d] = wps
-  end
-end
-
 local function refreshIndex()
   currentGenToken = currentGenToken + 1
   local token = currentGenToken
-  isScanning = true
 
   local targets, baseDir, isCollection, palettes = getActiveBaseDirs()
-  
   local active = getCurrentWallpaper()
   if active and active ~= "" then currentWallpaper = active end
 
-  -- Fast sync pass for top-level targets so the UI has immediate data
-  for _, t in ipairs(targets) do
-    scanDirSync(t)
-    local subDirs = noctalia.listDir(t)
-    if subDirs then
-      for _, sub in ipairs(subDirs) do
-        if not sub:match("^%.") then
-          scanDirSync(t .. "/" .. sub)
-        end
-      end
-    end
-  end
-  if baseDir then
-    scanDirSync(baseDir)
-    local subDirs = noctalia.listDir(baseDir)
-    if subDirs then
-      for _, sub in ipairs(subDirs) do
-        if not sub:match("^%.") then
-          scanDirSync(baseDir .. "/" .. sub)
-        end
-      end
-    end
+  -- 1. If we already have cached data, paint INSTANTLY without waiting
+  rebuildFoldersFromCache(targets, baseDir, isCollection, palettes)
+  if #allFolders > 0 then
+    isScanning = false
+    if render and isOpen then render() end
+  else
+    isScanning = true
+    if render and isOpen then render() end
   end
 
-  saveIndex()
-  rebuildFoldersFromCache(targets, baseDir, isCollection, palettes)
-  isScanning = false
-  if render and isOpen then render() end
+  -- 2. Run the fast find in a bash script to collect all images without blocking Luau
+  local dirsToScan = {}
+  for _, t in ipairs(targets) do table.insert(dirsToScan, t) end
+  if baseDir then table.insert(dirsToScan, baseDir) end
+
+  if #dirsToScan == 0 then
+    isScanning = false
+    if render and isOpen then render() end
+    return
+  end
+
+  local scanScript = cacheDir .. "/scan_catalog.sh"
+  local dirsStr = ""
+  for _, d in ipairs(dirsToScan) do dirsStr = dirsStr .. shellQuote(d) .. " " end
+  local scriptBody = "#!/bin/bash\nfind " .. dirsStr .. "-maxdepth 2 -type f \\( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \\) ! -path '*/.*' 2>/dev/null\n"
+  noctalia.writeFile(scanScript, scriptBody)
+
+  noctalia.runAsync("bash " .. shellQuote(scanScript), function(res)
+    if token ~= currentGenToken then return end
+    isScanning = false
+    if res and res.exitCode == 0 and res.stdout and res.stdout ~= "" then
+      local newFolders = {}
+      for path in res.stdout:gmatch("[^\r\n]+") do
+        local dir, file = path:match("^(.*)/([^/]+)$")
+        if dir and file then
+          if not newFolders[dir] then newFolders[dir] = {} end
+          local clean = file:gsub("%.%w+$", "")
+          table.insert(newFolders[dir], {
+            path = path,
+            filename = file,
+            name = clean,
+            sortKey = clean:lower()
+          })
+        end
+      end
+
+      indexCache.folders = newFolders
+      saveIndex()
+      rebuildFoldersFromCache(targets, baseDir, isCollection, palettes)
+    end
+    if render and isOpen then render() end
+  end)
 end
 
 local function getDisplayedFolderAt(offset)
