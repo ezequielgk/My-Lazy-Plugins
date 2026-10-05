@@ -1,4 +1,4 @@
-local viewMode = "folders" -- "folders" | "wallpapers"
+local viewMode = "folders" -- "folders" | "wallpapers" | "add_collection"
 local selectedFolderIndex = 1
 local displayedFolderIndex = 1
 local allFolders = {}
@@ -15,6 +15,12 @@ local navToken = 0
 local generatingPending = {}
 local batchRunning = false
 local isOpen = false
+
+-- Add collection state
+local addFolderPath = ""
+local addPaletteType = "builtin" -- "builtin" | "wallpaper" | "custom" | "community"
+local addPaletteName = "Nord"
+local addErrorMessage = ""
 
 math.randomseed(math.floor((os.clock() * 1000000) % 2147483647) + os.time())
 
@@ -54,11 +60,56 @@ local favoritesPath = configBaseDir .. "/wallpaper-widget-favorites.json"
 local collectionsPath = configBaseDir .. "/wallpaper-collections.json"
 
 local BUILTIN_PALETTES = {
-  "Nord", "Gruvbox", "Catppuccin", "Tokyo Night", "Everforest",
-  "Kanagawa", "Rose Pine", "Dracula", "Eldritch"
+  "Nord", "Gruvbox", "Catppuccin", "Tokyo-Night", "Everforest",
+  "Kanagawa", "Rosé Pine", "Dracula", "Eldritch", "Ayu"
 }
 
-local knownCustomPalettes = {}
+local WALLPAPER_PALETTES = {
+  "soft", "faithful", "vibrant", "muted", "m3-tonal-spot", "m3-fruit-salad", "m3-rainbow", "m3-monochrome", "content"
+}
+
+local function getCustomPalettes()
+  local list = {}
+  local pDir = configBaseDir .. "/palettes"
+  local files = noctalia.listDir(pDir)
+  if files then
+    for _, f in ipairs(files) do
+      if f:match("%.json$") and f ~= "registry.json" and f ~= "_live_preview.json" then
+        table.insert(list, f:gsub("%.json$", ""))
+      end
+    end
+  end
+  table.sort(list)
+  return list
+end
+
+local function getCommunityPalettes()
+  local list = {}
+  local cDir = configBaseDir .. "/community-palettes"
+  local files = noctalia.listDir(cDir)
+  if files then
+    for _, f in ipairs(files) do
+      if f:match("%.json$") then
+        table.insert(list, f:gsub("%.json$", ""))
+      end
+    end
+  end
+  table.sort(list)
+  return list
+end
+
+local function getPalettesForType(pType)
+  if pType == "builtin" then
+    return BUILTIN_PALETTES
+  elseif pType == "wallpaper" then
+    return WALLPAPER_PALETTES
+  elseif pType == "custom" then
+    return getCustomPalettes()
+  elseif pType == "community" then
+    return getCommunityPalettes()
+  end
+  return {}
+end
 
 local cacheDirPrepared = false
 local function ensureCacheDir()
@@ -115,19 +166,6 @@ local function toggleFavorite(path)
   end
 end
 
-local function loadCustomPalettes()
-  knownCustomPalettes = {}
-  local pDir = configBaseDir .. "/palettes"
-  local files = noctalia.listDir(pDir)
-  if files then
-    for _, f in ipairs(files) do
-      if f:match("%.json$") and f ~= "registry.json" and f ~= "_live_preview.json" then
-        table.insert(knownCustomPalettes, f:gsub("%.json$", ""))
-      end
-    end
-  end
-end
-
 local function resolveFolderPalette(folderName)
   local norm = normalizeName(folderName)
   for _, bName in ipairs(BUILTIN_PALETTES) do
@@ -135,7 +173,8 @@ local function resolveFolderPalette(folderName)
       return { source = "builtin", name = bName }
     end
   end
-  for _, cName in ipairs(knownCustomPalettes) do
+  local customs = getCustomPalettes()
+  for _, cName in ipairs(customs) do
     if norm == normalizeName(cName) then
       return { source = "custom", name = cName }
     end
@@ -162,53 +201,6 @@ local function saveCollectionsFile(list)
   local ok, encoded = pcall(function() return noctalia.json.encode(list) end)
   if ok and encoded then
     noctalia.writeFile(collectionsPath, encoded)
-  end
-end
-
-local function processAddedFolderSetting()
-  local addPath = noctalia.getConfig("add_folder_path")
-  if type(addPath) ~= "string" or addPath == "" then
-    return
-  end
-
-  local expPath = noctalia.expandPath(addPath)
-  local info = noctalia.fileInfo(expPath)
-  if not info or not info.isDir then
-    return
-  end
-
-  local addType = noctalia.getConfig("add_palette_type") or "builtin"
-  local addName = noctalia.getConfig("add_palette_name") or ""
-  local folderBaseName = expPath:match("([^/]+)$") or "Collection"
-  if addName == "" then
-    addName = (addType == "wallpaper") and "soft" or folderBaseName
-  end
-
-  local list = loadCollectionsFile()
-  local exists = false
-  for _, item in ipairs(list) do
-    if item.path == expPath then
-      item.name = folderBaseName
-      item.palette_type = addType
-      item.palette = addName
-      exists = true
-      break
-    end
-  end
-
-  if not exists then
-    table.insert(list, {
-      name = folderBaseName,
-      path = expPath,
-      palette_type = addType,
-      palette = addName,
-    })
-  end
-
-  saveCollectionsFile(list)
-
-  if noctalia.getConfig("notify_on_change") ~= false then
-    noctalia.notify(tr("panel.title"), tr("notify.collection_added") .. ": " .. folderBaseName)
   end
 end
 
@@ -386,8 +378,6 @@ end
 local function loadAllFolders()
   isScanning = true
   loadFavorites()
-  loadCustomPalettes()
-  processAddedFolderSetting()
 
   local folderList = {}
 
@@ -649,6 +639,75 @@ local function backToFolders()
   loadAllFolders()
 end
 
+local function openAddCollection()
+  viewMode = "add_collection"
+  addFolderPath = ""
+  addPaletteType = "builtin"
+  addPaletteName = BUILTIN_PALETTES[1] or "Nord"
+  addErrorMessage = ""
+  render()
+end
+
+local function submitAddCollection()
+  if not addFolderPath or addFolderPath == "" then
+    addErrorMessage = tr("panel.invalid_folder")
+    render()
+    return
+  end
+
+  local expPath = noctalia.expandPath(addFolderPath)
+  local info = noctalia.fileInfo(expPath)
+  if not info or not info.isDir then
+    addErrorMessage = tr("panel.invalid_folder")
+    render()
+    return
+  end
+
+  local testWps = {}
+  scanImagesInDir(expPath, testWps, 0)
+  if #testWps == 0 then
+    addErrorMessage = tr("panel.invalid_folder")
+    render()
+    return
+  end
+
+  local folderBaseName = expPath:match("([^/]+)$") or "Collection"
+  local finalPaletteName = addPaletteName
+  if not finalPaletteName or finalPaletteName == "" then
+    finalPaletteName = (addPaletteType == "wallpaper") and "soft" or folderBaseName
+  end
+
+  local list = loadCollectionsFile()
+  local exists = false
+  for _, item in ipairs(list) do
+    if item.path == expPath then
+      item.name = folderBaseName
+      item.palette_type = addPaletteType
+      item.palette = finalPaletteName
+      exists = true
+      break
+    end
+  end
+
+  if not exists then
+    table.insert(list, {
+      name = folderBaseName,
+      path = expPath,
+      palette_type = addPaletteType,
+      palette = finalPaletteName,
+    })
+  end
+
+  saveCollectionsFile(list)
+
+  if noctalia.getConfig("notify_on_change") ~= false then
+    noctalia.notify(tr("panel.title"), tr("notify.collection_added") .. ": " .. folderBaseName)
+  end
+
+  viewMode = "folders"
+  loadAllFolders()
+end
+
 local function applyFolderPalette(palette)
   if noctalia.getConfig("apply_palette") == false then return end
   if not palette or not palette.source or palette.source == "none" then return end
@@ -735,18 +794,249 @@ render = function()
     return
   end
 
+  -- VIEW MODE: ADD COLLECTION
+  if viewMode == "add_collection" then
+    local availablePalettes = getPalettesForType(addPaletteType)
+    local paletteSelectedIdx = 0
+    for i, p in ipairs(availablePalettes) do
+      if p == addPaletteName then
+        paletteSelectedIdx = i - 1
+        break
+      end
+    end
+
+    local paletteSelectorControl
+    if #availablePalettes > 0 then
+      paletteSelectorControl = ui.select({
+        key = "palette_selector_" .. addPaletteType,
+        options = availablePalettes,
+        selectedIndex = paletteSelectedIdx,
+        onChange = function(val, idx)
+          if type(val) == "string" then
+            addPaletteName = val
+          elseif type(val) == "number" then
+            addPaletteName = availablePalettes[val + 1] or availablePalettes[val] or ""
+          elseif type(idx) == "number" then
+            addPaletteName = availablePalettes[idx + 1] or availablePalettes[idx] or ""
+          end
+          render()
+        end,
+      })
+    else
+      local emptyMsg = (addPaletteType == "custom")
+        and tr("panel.palette_name_custom_empty")
+        or tr("panel.palette_name_community_empty")
+      paletteSelectorControl = ui.column({ gap = 4 }, {
+        ui.input({
+          key = "custom_palette_input",
+          placeholder = tr("panel.palette_name"),
+          value = addPaletteName,
+          onChange = function(val) addPaletteName = val or "" end,
+          onSubmit = function() submitAddCollection() end,
+        }),
+        ui.label({ text = emptyMsg, fontSize = 11, color = "on_surface_variant" }),
+      })
+    end
+
+    -- Palette quick-pick chips
+    local quickChips = {}
+    if #availablePalettes > 0 then
+      local maxChips = math.min(#availablePalettes, 8)
+      for i = 1, maxChips do
+        local pName = availablePalettes[i]
+        local isChosen = (pName == addPaletteName)
+        table.insert(quickChips, ui.button({
+          text = pName,
+          controlSize = "sm",
+          fill = isChosen and "primary/0.25" or nil,
+          borderWidth = isChosen and 2 or 1,
+          border = isChosen and "primary" or "outline",
+          onClick = function()
+            addPaletteName = pName
+            render()
+          end,
+        }))
+      end
+    end
+
+    panel.render(ui.column({
+      align = "center",
+      justify = "center",
+      flexGrow = 1,
+      padding = 24,
+    }, {
+      ui.column({
+        width = 660,
+        gap = 14,
+        padding = 20,
+        radius = rCenter,
+        fill = "surface_variant/0.3",
+        borderWidth = 1,
+        border = "outline",
+      }, {
+        -- Header
+        ui.row({
+          align = "center",
+          justify = "space_between",
+        }, {
+          ui.row({ align = "center", gap = 8 }, {
+            ui.glyph({ name = "folder-plus", size = 20, color = "primary" }),
+            ui.label({ text = tr("panel.add_collection_title"), fontSize = 16, fontWeight = "bold", color = "on_surface" }),
+          }),
+          ui.button({
+            glyph = "x",
+            controlSize = "sm",
+            onClick = function()
+              viewMode = "folders"
+              render()
+            end,
+          }),
+        }),
+
+        -- 1. Folder Path
+        ui.column({ gap = 4 }, {
+          ui.label({ text = tr("panel.folder_path"), fontSize = 12, fontWeight = "bold", color = "on_surface" }),
+          ui.input({
+            key = "add_folder_input",
+            placeholder = tr("panel.folder_path_placeholder"),
+            value = addFolderPath,
+            onChange = function(val)
+              addFolderPath = val or ""
+              addErrorMessage = ""
+            end,
+            onSubmit = function()
+              submitAddCollection()
+            end,
+          }),
+        }),
+
+        -- 2. Palette Type Selector (Pills)
+        ui.column({ gap = 6 }, {
+          ui.label({ text = tr("panel.palette_type"), fontSize = 12, fontWeight = "bold", color = "on_surface" }),
+          ui.row({ gap = 8 }, {
+            ui.button({
+              text = tr("panel.palette_source_builtin"),
+              fill = (addPaletteType == "builtin") and "primary/0.25" or nil,
+              borderWidth = (addPaletteType == "builtin") and 2 or 1,
+              border = (addPaletteType == "builtin") and "primary" or "outline",
+              controlSize = "sm",
+              onClick = function()
+                addPaletteType = "builtin"
+                addPaletteName = BUILTIN_PALETTES[1] or "Nord"
+                render()
+              end,
+            }),
+            ui.button({
+              text = tr("panel.palette_source_wallpaper"),
+              fill = (addPaletteType == "wallpaper") and "primary/0.25" or nil,
+              borderWidth = (addPaletteType == "wallpaper") and 2 or 1,
+              border = (addPaletteType == "wallpaper") and "primary" or "outline",
+              controlSize = "sm",
+              onClick = function()
+                addPaletteType = "wallpaper"
+                addPaletteName = WALLPAPER_PALETTES[1] or "soft"
+                render()
+              end,
+            }),
+            ui.button({
+              text = tr("panel.palette_source_custom"),
+              fill = (addPaletteType == "custom") and "primary/0.25" or nil,
+              borderWidth = (addPaletteType == "custom") and 2 or 1,
+              border = (addPaletteType == "custom") and "primary" or "outline",
+              controlSize = "sm",
+              onClick = function()
+                addPaletteType = "custom"
+                local customs = getCustomPalettes()
+                addPaletteName = customs[1] or ""
+                render()
+              end,
+            }),
+            ui.button({
+              text = tr("panel.palette_source_community"),
+              fill = (addPaletteType == "community") and "primary/0.25" or nil,
+              borderWidth = (addPaletteType == "community") and 2 or 1,
+              border = (addPaletteType == "community") and "primary" or "outline",
+              controlSize = "sm",
+              onClick = function()
+                addPaletteType = "community"
+                local comms = getCommunityPalettes()
+                addPaletteName = comms[1] or ""
+                render()
+              end,
+            }),
+          }),
+        }),
+
+        -- 3. Dynamic Palette Selector
+        ui.column({ gap = 6 }, {
+          ui.label({ text = tr("panel.palette_name"), fontSize = 12, fontWeight = "bold", color = "on_surface" }),
+          paletteSelectorControl,
+          #quickChips > 0 and ui.row({ gap = 6, align = "center" }, quickChips) or nil,
+        }),
+
+        -- Error display if any
+        addErrorMessage ~= "" and ui.label({
+          text = addErrorMessage,
+          fontSize = 12,
+          color = "error",
+          fontWeight = "bold",
+        }) or nil,
+
+        -- Actions Row
+        ui.row({
+          align = "center",
+          justify = "space_between",
+          paddingV = 6,
+        }, {
+          ui.button({
+            text = tr("panel.cancel"),
+            controlSize = "md",
+            onClick = function()
+              viewMode = "folders"
+              render()
+            end,
+          }),
+          ui.button({
+            text = tr("panel.save"),
+            glyph = "check",
+            fill = "primary/0.3",
+            borderWidth = 1,
+            border = "primary",
+            controlSize = "md",
+            onClick = function()
+              submitAddCollection()
+            end,
+          }),
+        }),
+      }),
+    }))
+    return
+  end
+
+  -- VIEW MODE: FOLDERS (LEVEL 1)
   if viewMode == "folders" then
     if #allFolders == 0 then
       panel.render(ui.column({
         align = "center",
         justify = "center",
         flexGrow = 1,
-        gap = 12,
+        gap = 14,
         padding = 40,
       }, {
         ui.glyph({ name = "photo-off", size = 48, color = "on_surface_variant" }),
         ui.label({ text = tr("panel.empty_folders"), fontSize = 15, fontWeight = "bold", color = "on_surface" }),
         ui.label({ text = tr("panel.empty_folders_hint"), fontSize = 13, color = "on_surface_variant" }),
+        ui.button({
+          text = "+ " .. tr("panel.add_collection"),
+          glyph = "folder-plus",
+          fill = "primary/0.25",
+          borderWidth = 1,
+          border = "primary",
+          controlSize = "md",
+          onClick = function()
+            openAddCollection()
+          end,
+        }),
       }))
       return
     end
@@ -835,7 +1125,8 @@ render = function()
       ui.row({
         align = "center",
         justify = "center",
-        height = 24,
+        gap = 10,
+        height = 26,
       }, {
         ui.row({
           align = "center",
@@ -847,6 +1138,15 @@ render = function()
         }, {
           ui.glyph({ name = fCenter.isFavoritesFolder and "star" or "palette", size = 13, color = "primary" }),
           ui.label({ text = palDisplayName, fontSize = 11, fontWeight = "bold", color = "primary" }),
+        }),
+
+        ui.button({
+          text = "+ " .. tr("panel.add_collection"),
+          glyph = "folder-plus",
+          controlSize = "sm",
+          onClick = function()
+            openAddCollection()
+          end,
         }),
       }),
 
@@ -860,6 +1160,13 @@ render = function()
         text = tr("panel.folder_hint"),
         fontSize = 11,
         color = "on_surface_variant",
+      }),
+
+      ui.label({
+        text = tr("panel.manage_collections_hint"),
+        fontSize = 10,
+        color = "on_surface_variant",
+        opacity = 0.75,
       }),
     })
 
@@ -875,7 +1182,7 @@ render = function()
     return
   end
 
-  -- VIEW MODE: WALLPAPERS
+  -- VIEW MODE: WALLPAPERS (LEVEL 2)
   if #allWallpapers == 0 then
     panel.render(ui.column({
       align = "center",
@@ -1049,8 +1356,20 @@ end
 function onKey(chord, pressed)
   if not pressed then return end
 
+  if viewMode == "add_collection" then
+    if chord == "Escape" then
+      viewMode = "folders"
+      render()
+    elseif chord == "Return" then
+      submitAddCollection()
+    end
+    return
+  end
+
   if viewMode == "folders" then
-    if chord == "Left" or chord == "Up" then
+    if chord == "a" or chord == "A" then
+      openAddCollection()
+    elseif chord == "Left" or chord == "Up" then
       stepFolderSelection(-1)
     elseif chord == "Right" or chord == "Down" then
       stepFolderSelection(1)
@@ -1100,7 +1419,7 @@ function onScroll(axis, steps, _startsGesture)
   local delta = (steps or 0) > 0 and 1 or -1
   if viewMode == "folders" then
     stepFolderSelection(delta)
-  else
+  elseif viewMode == "wallpapers" then
     stepWallpaperSelection(delta)
   end
 end

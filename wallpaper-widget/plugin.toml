@@ -1,6 +1,6 @@
 id = "ezequielgk/wallpaper-widget"
 name = "Wallpaper Widget"
-version = "1.2.0"
+version = "1.3.0"
 plugin_api = 15
 author = "ezequielgk"
 license = "MIT"
@@ -36,33 +36,6 @@ label_key = "settings.close_on_apply.label"
 description_key = "settings.close_on_apply.description"
 default = false
 
-# --- AÑADIR NUEVA COLECCIÓN ---
-[[setting]]
-key = "add_folder_path"
-type = "folder"
-label_key = "settings.add_folder_path.label"
-description_key = "settings.add_folder_path.description"
-
-[[setting]]
-key = "add_palette_type"
-type = "select"
-label_key = "settings.add_palette_type.label"
-description_key = "settings.add_palette_type.description"
-default = "builtin"
-options = [
-  { value = "builtin", label_key = "settings.type_builtin" },
-  { value = "wallpaper", label_key = "settings.type_wallpaper" },
-  { value = "community", label_key = "settings.type_community" },
-  { value = "custom", label_key = "settings.type_custom" },
-]
-
-[[setting]]
-key = "add_palette_name"
-type = "string"
-label_key = "settings.add_palette_name.label"
-description_key = "settings.add_palette_name.description"
-default = ""
-
 [[panel]]
 id = "hub"
 entry = "panel.luau"
@@ -72,7 +45,7 @@ placement = "floating"
 position = "center"
 dismiss_on_outside_click = true
 keyboard_focus = "exclusive"
-capture_keys = ["Left", "Right", "Up", "Down", "Return", "Escape", "Space", "Delete", "Backspace", "f", "F"]
+capture_keys = ["Left", "Right", "Up", "Down", "Return", "Escape", "Space", "Delete", "Backspace", "f", "F", "a", "A"]
 
 [[widget]]
 id = "widget"

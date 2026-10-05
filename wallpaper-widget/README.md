@@ -22,11 +22,23 @@ noctalia msg panel-toggle ezequielgk/wallpaper-widget:hub
 - **Adaptive Aesthetic**: Automatically follows each user's Noctalia shell geometry and styling (`shell.corner_radius_scale`).
 - **Preview**: Cards spotlight each collection cover with its assigned palette badge underneath.
 - **★ Favorites Folder**: If you have wallpapers marked as favorites, a dedicated collection appears first in the list.
+- **+ Add Collection**: Press `A` or click the `+ Add Collection` button to open the interactive modal.
 - **Controls**:
   - `←` / `→` (or `↑` / `↓`): Browse between collections.
   - `Enter`: Open the selected folder and browse its wallpapers.
+  - `A`: Add a new collection (folder path, palette source type, and dynamic palette).
   - `Space`: Pick a random folder.
   - `Esc`: Close the panel.
+
+#### Adding Collections (GUI Flow)
+1. Press `A` or click `+ Add Collection` in Level 1.
+2. Enter or paste the folder path (e.g. `~/Pictures/wallpapers/anime`).
+3. Choose the **Palette Source** (`Built-in`, `Wallpaper dynamic`, `Custom`, or `Community`).
+4. Select the **Palette**: dynamically populated based on what you actually have installed on your system.
+5. Click **Add Collection** (or press `Enter`). The new collection is saved to `~/.config/noctalia/wallpaper-collections.json`.
+6. You can add as many collections as you want sequentially!
+
+> **Note**: To modify or remove existing collections, edit `~/.config/noctalia/wallpaper-collections.json`.
 
 #### Level 2: Wallpapers Carousel
 - **Spotlight Center Card**: Clean 3-card horizontal layout with direct image rendering.
@@ -54,13 +66,8 @@ noctalia msg panel-toggle ezequielgk/wallpaper-widget:hub
 - **`apply_palette`**: Automatically apply the assigned palette to Noctalia when choosing a wallpaper.
 - **`notify_on_change`**: Send desktop notification when switching wallpaper, favorites, or adding collections.
 - **`close_on_apply`**: Automatically close the carousel after applying a wallpaper.
-- **`+ Add Collection: Folder`**: Select a folder to add to your collections.
-- **`+ Add Collection: Palette Type`**: Choose palette type (`Built-in`, `Wallpaper dynamic`, `Community`, `Custom`).
-- **`+ Add Collection: Palette Name`**: Name of the palette (e.g. `Nord`, `Gruvbox`, `Dim`, `soft`). Leave empty to match folder name.
 
-> **Note**: To modify or remove collections, edit `~/.config/noctalia/wallpaper-collections.json`.
-
-Favorites are automatically persisted in `~/.config/noctalia/wallpaper-widget-favorites.json`.
+> **Note**: Collections are managed directly in the widget GUI (+ button or `A` key) and persisted to `~/.config/noctalia/wallpaper-collections.json`. To modify or delete existing collections, edit that JSON file. Favorites are persisted in `~/.config/noctalia/wallpaper-widget-favorites.json`.
 
 ## License
 
