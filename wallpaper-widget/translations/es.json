@@ -23,6 +23,8 @@
     "palette_source_custom": "Personalizada",
     "palette_source_wallpaper": "Fondo dinámico",
     "palette_source_none": "Ninguna",
+    "select_placeholder": "Selecciona una paleta...",
+    "select_palette_error": "Elige una paleta",
     "search": "Buscar...",
     "add_collection": "Añadir Colección",
     "add_collection_title": "Añadir Nueva Colección",

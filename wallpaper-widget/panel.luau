@@ -19,7 +19,6 @@ local addPaletteType = "builtin"
 local addPaletteName = "Nord"
 local addPaletteSearch = ""
 local addErrorMessage = ""
-local isPaletteDropdownOpen = false
 
 math.randomseed(math.floor((os.clock() * 1000000) % 2147483647) + os.time())
 
@@ -658,14 +657,18 @@ local function openAddCollection()
   viewMode = "add_collection"
   addFolderPath = ""
   addPaletteType = "builtin"
-  addPaletteName = BUILTIN_PALETTES[1] or "Nord"
+  addPaletteName = ""
   addPaletteSearch = ""
   addErrorMessage = ""
-  isPaletteDropdownOpen = false
-  if render and isOpen then render() end
+    if render and isOpen then render() end
 end
 
 local function submitAddCollection()
+  if not addPaletteName or addPaletteName == "" then
+    addErrorMessage = tr("panel.select_palette_error") or "Elige una paleta"
+    if render and isOpen then render() end
+    return
+  end
   local trimmedPath = (addFolderPath or ""):match("^%s*(.-)%s*$") or ""
   if trimmedPath == "" then
     addErrorMessage = tr("panel.invalid_folder")
@@ -807,100 +810,77 @@ render = function()
 
     if viewMode == "add_collection" then
       local availablePalettes = getPalettesForType(addPaletteType)
-      local filteredPalettes = {}
-      local query = addPaletteSearch:lower():gsub("%s+", "")
+      local displayOptions = { tr("panel.select_placeholder") or "Selecciona una paleta" }
+      local realPalettes = {}
+      local seenDisplay = {}
+      
       for _, pName in ipairs(availablePalettes) do
-        if query == "" or pName:lower():gsub("%s+", ""):find(query, 1, true) then
-          table.insert(filteredPalettes, pName)
+        local disp = pName
+        if #disp > 38 then
+          disp = disp:sub(1, 37) .. "…"
+        end
+        if seenDisplay[disp] then
+          local suffix = 2
+          while seenDisplay[disp .. " (" .. suffix .. ")"] do suffix = suffix + 1 end
+          disp = disp .. " (" .. suffix .. ")"
+        end
+        seenDisplay[disp] = true
+        table.insert(displayOptions, disp)
+        table.insert(realPalettes, pName)
+      end
+
+      local selectedIdx = 1
+      if addPaletteName and addPaletteName ~= "" then
+        for i, pName in ipairs(realPalettes) do
+          if pName == addPaletteName then
+            selectedIdx = i + 1
+            break
+          end
         end
       end
 
-      local paletteSelectorControl
-      if isPaletteDropdownOpen then
-        local paletteGridRows = {}
-        for _, pName in ipairs(filteredPalettes) do
-          local isChosen = (pName == addPaletteName)
-          table.insert(paletteGridRows, ui.button({
-            text = pName,
-            variant = isChosen and "primary" or "ghost",
-            controlSize = "sm",
-            justify = "start",
-            onClick = function()
-              addPaletteName = pName
-              isPaletteDropdownOpen = false
-              if render and isOpen then render() end
-            end,
-          }))
-        end
-
-        paletteSelectorControl = ui.column({ gap = 6, width = 466 }, {
-          ui.row({ align = "center", justify = "space_between", width = 466 }, {
-            ui.input({
-              key = "search_palette_input_" .. addPaletteType,
-              placeholder = tr("panel.search") or "Filtrar...",
-              value = addPaletteSearch,
-              width = 360,
-              onChange = function(val)
-                addPaletteSearch = val or ""
-                if render and isOpen then render() end
-              end,
-            }),
-            ui.label({
-              text = tostring(#filteredPalettes) .. " / " .. tostring(#availablePalettes),
-              fontSize = 11,
-              color = "on_surface_variant"
-            }),
-          }),
-          #paletteGridRows > 0 and ui.scroll({
-            height = 140,
-            gap = 2,
-          }, paletteGridRows) or ui.label({
-            text = "Sin resultados.",
-            fontSize = 11,
-            color = "on_surface_variant",
-          }),
-        })
-      else
-        local dispName = (addPaletteName ~= "" and addPaletteName or "-")
-        if #availablePalettes == 0 then
-          dispName = tr("panel.empty") or "No hay paletas"
-        end
-        
-        paletteSelectorControl = ui.row({
-          width = 466,
-          height = 32,
-          paddingH = 12,
-          align = "center",
-          justify = "space_between",
-          radius = 6,
-          borderWidth = 1,
-          border = "outline",
-          fill = "surface_variant/0.5",
-          onClick = function()
-            if #availablePalettes > 0 then
-              isPaletteDropdownOpen = true
-              addPaletteSearch = ""
-              if render and isOpen then render() end
+      local paletteSelectorControl = ui.select({
+        key = "palette_selector_" .. addPaletteType,
+        options = displayOptions,
+        selectedIndex = selectedIdx,
+        width = 496,
+        onChange = function(valOrIdx, maybeVal)
+          local val = type(valOrIdx) == "string" and valOrIdx or (type(maybeVal) == "string" and maybeVal or nil)
+          local idx = type(valOrIdx) == "number" and valOrIdx or (type(maybeVal) == "number" and maybeVal or nil)
+          
+          local chosenIdx = 1
+          if idx and displayOptions[idx] then
+            chosenIdx = idx
+          elseif val then
+            for i, v in ipairs(displayOptions) do
+              if v == val then
+                chosenIdx = i
+                break
+              end
             end
           end
-        }, {
-          ui.label({ text = dispName, fontSize = 12, color = (#availablePalettes > 0 and "on_surface" or "on_surface_variant") }),
-          ui.glyph({ name = "chevron-down", size = 16, color = "on_surface_variant" })
-        })
-      end
+          
+          if chosenIdx == 1 then
+            addPaletteName = ""
+          else
+            addPaletteName = realPalettes[chosenIdx - 1] or ""
+          end
+          if render and isOpen then render() end
+        end
+      })
 
       local cardItems = {
         ui.row({
           align = "center",
           justify = "space_between",
-          width = 466,
+          width = 496,
         }, {
           ui.row({
             align = "center",
             gap = 8,
             paddingH = 12,
             paddingV = 4,
-            radius = rBadge,
+            radius = getCornerRadius and getCornerRadius(16) or 16,
             fill = "primary/0.2",
           }, {
             ui.glyph({ name = "folder-plus", size = 16, color = "primary" }),
@@ -923,7 +903,7 @@ render = function()
             key = "add_folder_input",
             placeholder = tr("panel.folder_path_placeholder"),
             value = addFolderPath,
-            width = 466,
+            width = 496,
             onChange = function(val)
               addFolderPath = val or ""
               addErrorMessage = ""
@@ -936,16 +916,14 @@ render = function()
 
         ui.column({ gap = 6 }, {
           ui.label({ text = tr("panel.palette_type"), fontSize = 12, fontWeight = "bold", color = "on_surface" }),
-          ui.row({ gap = 6, align = "center", width = 466 }, {
+          ui.row({ gap = 6, align = "center" }, {
             ui.button({
               text = tr("panel.palette_source_builtin"),
               variant = (addPaletteType == "builtin") and "primary" or "ghost",
               controlSize = "sm",
-              flexGrow = 1,
               onClick = function()
                 addPaletteType = "builtin"
-                isPaletteDropdownOpen = false
-                addPaletteName = BUILTIN_PALETTES[1] or "Nord"
+                addPaletteName = ""
                 if render and isOpen then render() end
               end,
             }),
@@ -953,11 +931,9 @@ render = function()
               text = tr("panel.palette_source_wallpaper"),
               variant = (addPaletteType == "wallpaper") and "primary" or "ghost",
               controlSize = "sm",
-              flexGrow = 1,
               onClick = function()
                 addPaletteType = "wallpaper"
-                isPaletteDropdownOpen = false
-                addPaletteName = WALLPAPER_PALETTES[1] or "soft"
+                addPaletteName = ""
                 if render and isOpen then render() end
               end,
             }),
@@ -965,11 +941,9 @@ render = function()
               text = tr("panel.palette_source_custom"),
               variant = (addPaletteType == "custom") and "primary" or "ghost",
               controlSize = "sm",
-              flexGrow = 1,
               onClick = function()
                 addPaletteType = "custom"
-                isPaletteDropdownOpen = false
-                addPaletteName = getCustomPalettes()[1] or ""
+                addPaletteName = ""
                 if render and isOpen then render() end
               end,
             }),
@@ -977,11 +951,9 @@ render = function()
               text = tr("panel.palette_source_community"),
               variant = (addPaletteType == "community") and "primary" or "ghost",
               controlSize = "sm",
-              flexGrow = 1,
               onClick = function()
                 addPaletteType = "community"
-                isPaletteDropdownOpen = false
-                addPaletteName = getCommunityPalettes()[1] or ""
+                addPaletteName = ""
                 if render and isOpen then render() end
               end,
             }),
@@ -1038,10 +1010,10 @@ render = function()
       }, {
         ui.column({
           key = "add_collection_card",
-          width = 510,
+          width = 540,
           gap = 16,
           padding = 22,
-          radius = 16,
+          radius = getCornerRadius and getCornerRadius(16) or 16,
           fill = "surface_variant/0.3",
           borderWidth = 1,
           border = "outline",
@@ -1326,13 +1298,8 @@ function onKey(chord, pressed)
   local ok, err = pcall(function()
     if viewMode == "add_collection" then
       if c == "escape" then
-        if isPaletteDropdownOpen then
-          isPaletteDropdownOpen = false
-          if render and isOpen then render() end
-        else
-          viewMode = "folders"
-          if render and isOpen then render() end
-        end
+        viewMode = "folders"
+        if render and isOpen then render() end
       elseif c == "return" or c == "enter" or c == "kp_enter" then
         submitAddCollection()
       end

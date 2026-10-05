@@ -23,6 +23,8 @@
     "palette_source_custom": "Custom",
     "palette_source_wallpaper": "Wallpaper",
     "palette_source_none": "None",
+    "select_placeholder": "Select a palette...",
+    "select_palette_error": "Choose a palette",
     "search": "Search...",
     "add_collection": "Add Collection",
     "add_collection_title": "Add New Collection",
