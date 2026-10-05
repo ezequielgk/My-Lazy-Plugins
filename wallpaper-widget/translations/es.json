@@ -12,7 +12,7 @@
     "empty": "No se encontraron fondos en el directorio.",
     "empty_hint": "Añade imágenes (.png, .jpg, .jpeg, .webp) a tu carpeta de fondos.",
     "empty_folders": "No se encontraron carpetas de fondos.",
-    "empty_folders_hint": "Añade subcarpetas con imágenes o pulsa '+ Añadir Colección'.",
+    "empty_folders_hint": "Añade subcarpetas con imágenes, o pulsa 'A' para añadir una colección.",
     "folders_count": "carpetas",
     "folder_hint": "←  →  ↑  ↓ explorar   ·   Enter entrar   ·   A añadir carpeta   ·   Esc cerrar",
     "hint": "←  →  ↑  ↓ explorar   ·   Enter aplicar   ·   F favorito   ·   Del volver   ·   Espacio aleatorio",
@@ -40,7 +40,7 @@
   "settings": {
     "wallpaper_dir": {
       "label": "Directorio de Fondos",
-      "description": "Ruta base por defecto. Las colecciones se añaden directamente en el panel del widget (+ o tecla 'A'). Para editar o eliminar colecciones, edita ~/.config/noctalia/wallpaper-collections.json."
+      "description": "Ruta base por defecto. Las colecciones se añaden con la tecla 'A' en el carrusel del widget. Para editar o eliminar colecciones, edita ~/.config/noctalia/wallpaper-collections.json."
     },
     "apply_palette": {
       "label": "Aplicar Paleta de Color",

@@ -866,9 +866,9 @@ render = function()
       padding = 24,
     }, {
       ui.column({
-        width = 660,
-        gap = 14,
-        padding = 20,
+        width = 560,
+        gap = 12,
+        padding = 18,
         radius = rCenter,
         fill = "surface_variant/0.3",
         borderWidth = 1,
@@ -880,8 +880,8 @@ render = function()
           justify = "space_between",
         }, {
           ui.row({ align = "center", gap = 8 }, {
-            ui.glyph({ name = "folder-plus", size = 20, color = "primary" }),
-            ui.label({ text = tr("panel.add_collection_title"), fontSize = 16, fontWeight = "bold", color = "on_surface" }),
+            ui.glyph({ name = "folder-plus", size = 18, color = "primary" }),
+            ui.label({ text = tr("panel.add_collection_title"), fontSize = 15, fontWeight = "bold", color = "on_surface" }),
           }),
           ui.button({
             glyph = "x",
@@ -986,11 +986,11 @@ render = function()
         ui.row({
           align = "center",
           justify = "space_between",
-          paddingV = 6,
+          paddingV = 4,
         }, {
           ui.button({
             text = tr("panel.cancel"),
-            controlSize = "md",
+            controlSize = "sm",
             onClick = function()
               viewMode = "folders"
               render()
@@ -999,10 +999,10 @@ render = function()
           ui.button({
             text = tr("panel.save"),
             glyph = "check",
-            fill = "primary/0.3",
+            fill = "primary/0.25",
             borderWidth = 1,
             border = "primary",
-            controlSize = "md",
+            controlSize = "sm",
             onClick = function()
               submitAddCollection()
             end,
@@ -1020,23 +1020,12 @@ render = function()
         align = "center",
         justify = "center",
         flexGrow = 1,
-        gap = 14,
+        gap = 12,
         padding = 40,
       }, {
         ui.glyph({ name = "photo-off", size = 48, color = "on_surface_variant" }),
         ui.label({ text = tr("panel.empty_folders"), fontSize = 15, fontWeight = "bold", color = "on_surface" }),
         ui.label({ text = tr("panel.empty_folders_hint"), fontSize = 13, color = "on_surface_variant" }),
-        ui.button({
-          text = "+ " .. tr("panel.add_collection"),
-          glyph = "folder-plus",
-          fill = "primary/0.25",
-          borderWidth = 1,
-          border = "primary",
-          controlSize = "md",
-          onClick = function()
-            openAddCollection()
-          end,
-        }),
       }))
       return
     end
@@ -1125,8 +1114,7 @@ render = function()
       ui.row({
         align = "center",
         justify = "center",
-        gap = 10,
-        height = 26,
+        height = 24,
       }, {
         ui.row({
           align = "center",
@@ -1138,15 +1126,6 @@ render = function()
         }, {
           ui.glyph({ name = fCenter.isFavoritesFolder and "star" or "palette", size = 13, color = "primary" }),
           ui.label({ text = palDisplayName, fontSize = 11, fontWeight = "bold", color = "primary" }),
-        }),
-
-        ui.button({
-          text = "+ " .. tr("panel.add_collection"),
-          glyph = "folder-plus",
-          controlSize = "sm",
-          onClick = function()
-            openAddCollection()
-          end,
         }),
       }),
 

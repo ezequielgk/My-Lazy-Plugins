@@ -22,7 +22,6 @@ noctalia msg panel-toggle ezequielgk/wallpaper-widget:hub
 - **Adaptive Aesthetic**: Automatically follows each user's Noctalia shell geometry and styling (`shell.corner_radius_scale`).
 - **Preview**: Cards spotlight each collection cover with its assigned palette badge underneath.
 - **★ Favorites Folder**: If you have wallpapers marked as favorites, a dedicated collection appears first in the list.
-- **+ Add Collection**: Press `A` or click the `+ Add Collection` button to open the interactive modal.
 - **Controls**:
   - `←` / `→` (or `↑` / `↓`): Browse between collections.
   - `Enter`: Open the selected folder and browse its wallpapers.
@@ -30,8 +29,8 @@ noctalia msg panel-toggle ezequielgk/wallpaper-widget:hub
   - `Space`: Pick a random folder.
   - `Esc`: Close the panel.
 
-#### Adding Collections (GUI Flow)
-1. Press `A` or click `+ Add Collection` in Level 1.
+#### Adding Collections (Keybind `A`)
+1. Press `A` in Level 1 (Collections view).
 2. Enter or paste the folder path (e.g. `~/Pictures/wallpapers/anime`).
 3. Choose the **Palette Source** (`Built-in`, `Wallpaper dynamic`, `Custom`, or `Community`).
 4. Select the **Palette**: dynamically populated based on what you actually have installed on your system.
@@ -67,7 +66,7 @@ noctalia msg panel-toggle ezequielgk/wallpaper-widget:hub
 - **`notify_on_change`**: Send desktop notification when switching wallpaper, favorites, or adding collections.
 - **`close_on_apply`**: Automatically close the carousel after applying a wallpaper.
 
-> **Note**: Collections are managed directly in the widget GUI (+ button or `A` key) and persisted to `~/.config/noctalia/wallpaper-collections.json`. To modify or delete existing collections, edit that JSON file. Favorites are persisted in `~/.config/noctalia/wallpaper-widget-favorites.json`.
+> **Note**: Collections can be added pressing `A` in the widget carousel and are persisted in `~/.config/noctalia/wallpaper-collections.json`. To modify or delete existing collections, edit that JSON file. Favorites are persisted in `~/.config/noctalia/wallpaper-widget-favorites.json`.
 
 ## License
 

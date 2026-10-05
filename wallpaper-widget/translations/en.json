@@ -12,7 +12,7 @@
     "empty": "No wallpapers found in directory.",
     "empty_hint": "Add images (.png, .jpg, .jpeg, .webp) to your wallpapers folder.",
     "empty_folders": "No wallpaper folders found.",
-    "empty_folders_hint": "Add subfolders in your wallpapers folder or click '+ Add Collection'.",
+    "empty_folders_hint": "Add subfolders in your wallpapers folder, or press 'A' to add a collection.",
     "folders_count": "folders",
     "folder_hint": "←  →  ↑  ↓ browse   ·   Enter open   ·   A add folder   ·   Esc close",
     "hint": "←  →  ↑  ↓ browse   ·   Enter apply   ·   F favorite   ·   Del back   ·   Space random",
@@ -40,7 +40,7 @@
   "settings": {
     "wallpaper_dir": {
       "label": "Wallpaper Directory",
-      "description": "Default base folder. Collections can be added in the widget GUI (+ button or 'A' key). To edit or delete collections, edit ~/.config/noctalia/wallpaper-collections.json."
+      "description": "Default base folder. Collections can be added with key 'A' in the widget carousel. To edit or delete collections, edit ~/.config/noctalia/wallpaper-collections.json."
     },
     "apply_palette": {
       "label": "Apply Color Palette",
