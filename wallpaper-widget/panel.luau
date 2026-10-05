@@ -849,18 +849,29 @@ render = function()
           local idx = type(valOrIdx) == "number" and valOrIdx or (type(maybeVal) == "number" and maybeVal or nil)
           
           local chosenIdx = 1
-          if idx and displayOptions[idx] then
-            chosenIdx = idx
-          elseif val then
+          if val and val ~= "" then
             for i, v in ipairs(displayOptions) do
               if v == val then
                 chosenIdx = i
                 break
               end
             end
+          elseif idx then
+            -- Check if it's 0-based by matching old logic
+            if displayOptions[idx + 1] and not displayOptions[idx] then
+               chosenIdx = idx + 1
+            else
+               -- If displayOptions[idx] exists, could it be 1-based or 0-based? 
+               -- Let's just use idx directly if we have to, but hopefully val is present.
+               -- Actually, to be super safe and match old logic:
+               if type(valOrIdx) == "number" then
+                 chosenIdx = valOrIdx + 1
+                 if not displayOptions[chosenIdx] then chosenIdx = valOrIdx end
+               end
+            end
           end
           
-          if chosenIdx == 1 then
+          if chosenIdx <= 1 then
             addPaletteName = ""
           else
             addPaletteName = realPalettes[chosenIdx - 1] or ""
