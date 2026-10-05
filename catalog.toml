@@ -31,8 +31,8 @@ tags = ["bar", "panel", "system", "productivity"]
 [[plugin]]
 id = "ezequielgk/wallpaper-widget"
 name = "Wallpaper Widget"
-version = "1.2.0"
-updated_at = 1791162457
+version = "1.3.0"
+updated_at = 1791167406
 added_at = 1791157966
 author = "ezequielgk"
 license = "MIT"
