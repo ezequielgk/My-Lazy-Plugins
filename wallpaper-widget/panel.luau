@@ -810,7 +810,7 @@ render = function()
 
     if viewMode == "add_collection" then
       local availablePalettes = getPalettesForType(addPaletteType)
-      local displayOptions = { tr("panel.select_placeholder") or "Selecciona una paleta" }
+      local displayOptions = {}
       local realPalettes = {}
       local seenDisplay = {}
       
@@ -829,56 +829,37 @@ render = function()
         table.insert(realPalettes, pName)
       end
 
-      local selectedIdx = 1
+      local selIndex = nil
       if addPaletteName and addPaletteName ~= "" then
         for i, pName in ipairs(realPalettes) do
           if pName == addPaletteName then
-            selectedIdx = i + 1
+            selIndex = i - 1 -- host uses 0-based indices
             break
           end
         end
       end
 
-      local paletteSelectorControl = ui.select({
+      local selectProps = {
         key = "palette_selector_" .. addPaletteType,
         options = displayOptions,
-        selectedIndex = selectedIdx,
+        placeholder = tr("panel.select_placeholder") or "Selecciona una paleta...",
         width = 496,
-        onChange = function(valOrIdx, maybeVal)
-          local val = type(valOrIdx) == "string" and valOrIdx or (type(maybeVal) == "string" and maybeVal or nil)
-          local idx = type(valOrIdx) == "number" and valOrIdx or (type(maybeVal) == "number" and maybeVal or nil)
-          
-          local chosenIdx = 1
-          if val and val ~= "" then
-            for i, v in ipairs(displayOptions) do
-              if v == val then
-                chosenIdx = i
-                break
-              end
-            end
-          elseif idx then
-            -- Check if it's 0-based by matching old logic
-            if displayOptions[idx + 1] and not displayOptions[idx] then
-               chosenIdx = idx + 1
-            else
-               -- If displayOptions[idx] exists, could it be 1-based or 0-based? 
-               -- Let's just use idx directly if we have to, but hopefully val is present.
-               -- Actually, to be super safe and match old logic:
-               if type(valOrIdx) == "number" then
-                 chosenIdx = valOrIdx + 1
-                 if not displayOptions[chosenIdx] then chosenIdx = valOrIdx end
-               end
+        onChange = function(idx)
+          local n = tonumber(idx)
+          if n ~= nil then
+            local chosen = realPalettes[math.floor(n) + 1]
+            if type(chosen) == "string" and chosen ~= "" then
+              addPaletteName = chosen
+              addErrorMessage = ""
+              if render and isOpen then render() end
             end
           end
-          
-          if chosenIdx <= 1 then
-            addPaletteName = ""
-          else
-            addPaletteName = realPalettes[chosenIdx - 1] or ""
-          end
-          if render and isOpen then render() end
         end
-      })
+      }
+      if selIndex ~= nil then
+        selectProps.selectedIndex = selIndex
+      end
+      local paletteSelectorControl = ui.select(selectProps)
 
       local cardItems = {
         ui.row({

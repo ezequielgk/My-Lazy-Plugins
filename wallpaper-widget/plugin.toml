@@ -45,7 +45,7 @@ placement = "floating"
 position = "center"
 dismiss_on_outside_click = true
 keyboard_focus = "exclusive"
-capture_keys = ["Left", "Right", "Up", "Down", "Return", "Escape", "Space", "Delete", "Backspace", "f", "F", "a", "A"]
+capture_keys = ["Left", "Right", "Up", "Down", "Return", "Escape", "Space", "f", "F", "a", "A"]
 
 [[widget]]
 id = "widget"
