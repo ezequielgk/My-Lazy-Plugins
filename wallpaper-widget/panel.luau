@@ -882,19 +882,33 @@ render = function()
         })
       else
         local selectProps = {
-          key = "palette_selector_" .. addPaletteType,
+          key = "palette_sel_" .. addPaletteType .. "_" .. (addPaletteName ~= "" and addPaletteName or "none"),
           options = displayOptions,
           placeholder = tr("panel.select_placeholder") or "Selecciona una paleta...",
           width = 536,
-          onChange = function(idx)
-            local n = tonumber(idx)
+          onChange = function(valOrIdx)
+            local chosen = nil
+            local n = tonumber(valOrIdx)
             if n ~= nil then
-              local chosen = realPalettes[math.floor(n) + 1]
-              if type(chosen) == "string" and chosen ~= "" then
-                addPaletteName = chosen
-                addErrorMessage = ""
-                if render and isOpen then render() end
+              chosen = realPalettes[math.floor(n) + 1]
+            elseif type(valOrIdx) == "string" and valOrIdx ~= "" then
+              -- Maybe the option string itself was passed
+              for i, disp in ipairs(displayOptions) do
+                if disp == valOrIdx then
+                  chosen = realPalettes[i]
+                  break
+                end
               end
+              if not chosen then
+                for _, real in ipairs(realPalettes) do
+                  if real == valOrIdx then chosen = real; break end
+                end
+              end
+            end
+            if chosen and chosen ~= "" then
+              addPaletteName = chosen
+              addErrorMessage = ""
+              if render and isOpen then render() end
             end
           end
         }
