@@ -693,6 +693,21 @@ local function backToFolders()
   end)
 end
 
+local function browseFolderDialog()
+  local title = tr("panel.folder_path")
+  local cmd = "zenity --file-selection --directory --title=" .. shellQuote(title) .. " 2>/dev/null || yad --file --directory --title=" .. shellQuote(title) .. " 2>/dev/null"
+  noctalia.runAsync(cmd, function(result)
+    if result and result.exitCode == 0 and result.stdout then
+      local path = result.stdout:gsub("%s+$", "")
+      if path ~= "" then
+        addFolderPath = path
+        addErrorMessage = ""
+        render()
+      end
+    end
+  end)
+end
+
 local function openAddCollection()
   viewMode = "add_collection"
   addFolderPath = ""
@@ -859,87 +874,63 @@ render = function()
 
   -- VIEW MODE: ADD COLLECTION
   if viewMode == "add_collection" then
-    local allAvailable = getPalettesForType(addPaletteType)
-    local filteredPalettes = {}
-    local query = addPaletteSearch:lower():gsub("%s+", "")
-    for _, pName in ipairs(allAvailable) do
-      if query == "" or pName:lower():gsub("%s+", ""):find(query, 1, true) then
-        table.insert(filteredPalettes, pName)
+    local availablePalettes = getPalettesForType(addPaletteType)
+    local paletteSelectedIdx = 0
+    for i, p in ipairs(availablePalettes) do
+      if p == addPaletteName then
+        paletteSelectedIdx = i - 1
+        break
       end
     end
 
-    -- Build compact rows of clickable palette buttons
-    local paletteGridRows = {}
-    local currentRow = {}
-    local itemsPerRow = 4
-    for i, pName in ipairs(filteredPalettes) do
-      local isChosen = (pName == addPaletteName)
-      table.insert(currentRow, ui.button({
-        text = pName,
-        variant = isChosen and "primary" or "outline",
-        controlSize = "sm",
-        onClick = function()
-          addPaletteName = pName
-          render()
+    local paletteSelectorControl
+    if #availablePalettes > 0 then
+      paletteSelectorControl = ui.select({
+        key = "palette_selector_" .. addPaletteType,
+        options = availablePalettes,
+        selectedIndex = paletteSelectedIdx,
+        width = 466,
+        onChange = function(a, b)
+          local chosen = nil
+          if type(b) == "string" and b ~= "" then
+            chosen = b
+          elseif type(a) == "string" and a ~= "" then
+            chosen = a
+          elseif type(a) == "number" then
+            chosen = availablePalettes[a + 1] or availablePalettes[a]
+          elseif type(b) == "number" then
+            chosen = availablePalettes[b + 1] or availablePalettes[b]
+          elseif type(a) == "table" and a.label then
+            chosen = a.label
+          elseif type(a) == "table" and a.value then
+            chosen = a.value
+          end
+          if chosen and chosen ~= "" then
+            addPaletteName = chosen
+            render()
+          end
         end,
-      }))
-      if #currentRow == itemsPerRow or i == #filteredPalettes then
-        table.insert(paletteGridRows, ui.row({ gap = 6, align = "center" }, currentRow))
-        currentRow = {}
-      end
-    end
-
-    local paletteSectionChildren = {
-      ui.row({
-        align = "center",
-        justify = "space_between",
-      }, {
-        ui.label({ text = tr("panel.palette_name"), fontSize = 12, fontWeight = "bold", color = "on_surface" }),
-        ui.row({
-          align = "center",
-          gap = 6,
-          paddingH = 10,
-          paddingV = 4,
-          radius = rBadge,
-          fill = "primary/0.25",
-        }, {
-          ui.glyph({ name = "palette", size = 12, color = "primary" }),
-          ui.label({ text = (addPaletteName ~= "" and addPaletteName or "-"), fontSize = 11, fontWeight = "bold", color = "primary" }),
-        }),
-      }),
-    }
-
-    if #allAvailable > 8 then
-      table.insert(paletteSectionChildren, ui.input({
-        key = "search_palette_input_" .. addPaletteType,
-        placeholder = "Filtrar paletas...",
-        value = addPaletteSearch,
-        width = 496,
-        onChange = function(val)
-          addPaletteSearch = val or ""
-          render()
-        end,
-      }))
-    end
-
-    if #paletteGridRows > 0 then
-      table.insert(paletteSectionChildren, ui.scroll({
-        height = 90,
-        gap = 5,
-      }, paletteGridRows))
+      })
     else
-      local emptyMsg = (addPaletteType == "custom") and tr("panel.palette_name_custom_empty") or tr("panel.palette_name_community_empty")
-      if addPaletteSearch ~= "" then
-        emptyMsg = "Sin resultados para '" .. addPaletteSearch .. "'"
-      end
-      table.insert(paletteSectionChildren, ui.label({
-        text = emptyMsg,
-        fontSize = 11,
-        color = "on_surface_variant",
-      }))
+      local emptyMsg = (addPaletteType == "custom")
+        and tr("panel.palette_name_custom_empty")
+        or tr("panel.palette_name_community_empty")
+      paletteSelectorControl = ui.column({ gap = 4 }, {
+        ui.input({
+          key = "custom_palette_input",
+          placeholder = tr("panel.palette_name"),
+          value = addPaletteName,
+          width = 466,
+          onChange = function(val)
+            addPaletteName = val or ""
+          end,
+          onSubmit = function()
+            submitAddCollection()
+          end,
+        }),
+        ui.label({ text = emptyMsg, fontSize = 11, color = "on_surface_variant" }),
+      })
     end
-
-    local paletteDisplaySection = ui.column({ gap = 6 }, paletteSectionChildren)
 
     local cardItems = {
       -- Header
@@ -947,9 +938,16 @@ render = function()
         align = "center",
         justify = "space_between",
       }, {
-        ui.row({ align = "center", gap = 8 }, {
-          ui.glyph({ name = "folder-plus", size = 18, color = "primary" }),
-          ui.label({ text = tr("panel.add_collection_title"), fontSize = 15, fontWeight = "bold", color = "on_surface" }),
+        ui.row({
+          align = "center",
+          gap = 8,
+          paddingH = 12,
+          paddingV = 4,
+          radius = 6,
+          fill = "surface_variant/0.45",
+        }, {
+          ui.glyph({ name = "folder-plus", size = 16, color = "on_surface" }),
+          ui.label({ text = tr("panel.add_collection_title"), fontSize = 13, fontWeight = "bold", color = "on_surface" }),
         }),
         ui.button({
           glyph = "x",
@@ -962,57 +960,65 @@ render = function()
         }),
       }),
 
-      -- 1. Folder Path
+      -- 1. Folder Path with native file chooser button
       ui.column({ gap = 5 }, {
         ui.label({ text = tr("panel.folder_path"), fontSize = 12, fontWeight = "bold", color = "on_surface" }),
-        ui.input({
-          key = "add_folder_input",
-          placeholder = tr("panel.folder_path_placeholder"),
-          value = addFolderPath,
-          width = 496,
-          onChange = function(val)
-            addFolderPath = val or ""
-            addErrorMessage = ""
-          end,
-          onSubmit = function()
-            submitAddCollection()
-          end,
+        ui.row({ gap = 8, align = "center" }, {
+          ui.input({
+            key = "add_folder_input",
+            placeholder = tr("panel.folder_path_placeholder"),
+            value = addFolderPath,
+            width = 420,
+            onChange = function(val)
+              addFolderPath = val or ""
+              addErrorMessage = ""
+            end,
+            onSubmit = function()
+              submitAddCollection()
+            end,
+          }),
+          ui.button({
+            glyph = "folder",
+            variant = "outline",
+            controlSize = "md",
+            tooltip = tr("panel.folder_path"),
+            onClick = function()
+              browseFolderDialog()
+            end,
+          }),
         }),
       }),
 
-      -- 2. Palette Type Selector (Buttons)
+      -- 2. Palette Type Selector (Buttons / Pills)
       ui.column({ gap = 6 }, {
         ui.label({ text = tr("panel.palette_type"), fontSize = 12, fontWeight = "bold", color = "on_surface" }),
         ui.row({ gap = 8, align = "center" }, {
           ui.button({
             text = tr("panel.palette_source_builtin"),
-            variant = (addPaletteType == "builtin") and "primary" or "outline",
+            variant = (addPaletteType == "builtin") and "primary" or "ghost",
             controlSize = "sm",
             onClick = function()
               addPaletteType = "builtin"
-              addPaletteSearch = ""
               addPaletteName = BUILTIN_PALETTES[1] or "Nord"
               render()
             end,
           }),
           ui.button({
             text = tr("panel.palette_source_wallpaper"),
-            variant = (addPaletteType == "wallpaper") and "primary" or "outline",
+            variant = (addPaletteType == "wallpaper") and "primary" or "ghost",
             controlSize = "sm",
             onClick = function()
               addPaletteType = "wallpaper"
-              addPaletteSearch = ""
               addPaletteName = WALLPAPER_PALETTES[1] or "soft"
               render()
             end,
           }),
           ui.button({
             text = tr("panel.palette_source_custom"),
-            variant = (addPaletteType == "custom") and "primary" or "outline",
+            variant = (addPaletteType == "custom") and "primary" or "ghost",
             controlSize = "sm",
             onClick = function()
               addPaletteType = "custom"
-              addPaletteSearch = ""
               local customs = getCustomPalettes()
               addPaletteName = customs[1] or ""
               render()
@@ -1020,11 +1026,10 @@ render = function()
           }),
           ui.button({
             text = tr("panel.palette_source_community"),
-            variant = (addPaletteType == "community") and "primary" or "outline",
+            variant = (addPaletteType == "community") and "primary" or "ghost",
             controlSize = "sm",
             onClick = function()
               addPaletteType = "community"
-              addPaletteSearch = ""
               local comms = getCommunityPalettes()
               addPaletteName = comms[1] or ""
               render()
@@ -1033,8 +1038,11 @@ render = function()
         }),
       }),
 
-      -- 3. Palette Selection
-      paletteDisplaySection,
+      -- 3. Dynamic Palette Selector (Dropdown)
+      ui.column({ gap = 6 }, {
+        ui.label({ text = tr("panel.palette_name"), fontSize = 12, fontWeight = "bold", color = "on_surface" }),
+        paletteSelectorControl,
+      }),
     }
 
     if addErrorMessage ~= "" then
@@ -1048,13 +1056,14 @@ render = function()
 
     table.insert(cardItems, ui.row({
       align = "center",
-      justify = "space_between",
+      justify = "end",
+      gap = 10,
       paddingV = 4,
     }, {
       ui.button({
         text = tr("panel.cancel"),
-        variant = "outline",
-        controlSize = "sm",
+        variant = "ghost",
+        controlSize = "md",
         onClick = function()
           viewMode = "folders"
           render()
@@ -1064,7 +1073,7 @@ render = function()
         text = tr("panel.save"),
         glyph = "check",
         variant = "primary",
-        controlSize = "sm",
+        controlSize = "md",
         onClick = function()
           submitAddCollection()
         end,
@@ -1078,11 +1087,11 @@ render = function()
       justify = "center",
     }, {
       ui.column({
-        width = 540,
-        gap = 12,
-        padding = 20,
+        width = 510,
+        gap = 14,
+        padding = 22,
         radius = rCenter,
-        fill = "surface_variant/0.35",
+        fill = "surface_variant/0.3",
         borderWidth = 1,
         border = "outline",
       }, cardItems),
