@@ -682,6 +682,9 @@ local function openAddCollection()
 end
 
 local function submitAddCollection()
+  local noctalia = require("@noctalia")
+  local debugLog = "submitAddCollection called:\naddFolderPath=" .. tostring(addFolderPath) .. "\naddPaletteType=" .. tostring(addPaletteType) .. "\naddPaletteName=" .. tostring(addPaletteName) .. "\n"
+  noctalia.writeFile("/tmp/add_collection_debug.log", debugLog)
   if addPaletteType ~= "none" and (not addPaletteName or addPaletteName == "") then
     addErrorMessage = tr("panel.select_palette_error") or "Elige una paleta"
     if render and isOpen then render() end
@@ -706,9 +709,14 @@ local function submitAddCollection()
   end
 
   if not info or not info.isDir then
-    addErrorMessage = tr("panel.invalid_folder")
-    if render and isOpen then render() end
-    return
+    -- Fallback: check with noctalia.fileExists if fileInfo fails
+    if not noctalia.fileExists(expPath) then
+      addErrorMessage = tr("panel.invalid_folder")
+      local f = io.open("/tmp/add_collection_debug.log", "a")
+      if f then f:write("Failed path validation for: " .. expPath .. "\n"); f:close() end
+      if render and isOpen then render() end
+      return
+    end
   end
 
   local folderBaseName = expPath:match("([^/]+)$") or "Collection"
