@@ -1,17 +1,20 @@
 {
   "notify": {
     "switched": "Wallpaper Switched",
-    "switched_with_palette": "Wallpaper & Palette Applied"
+    "favorite_added": "Added to Favorites",
+    "favorite_removed": "Removed from Favorites"
   },
   "panel": {
     "active": "ACTIVE",
+    "favorite": "Favorite",
+    "favorites": "Favorites",
     "empty": "No wallpapers found in directory.",
     "empty_hint": "Add images (.png, .jpg, .jpeg, .webp) to your wallpapers folder.",
     "empty_folders": "No wallpaper folders configured.",
     "empty_folders_hint": "Configure wallpaper folders in Settings -> Plugins -> Wallpaper Widget.",
     "folders_count": "folders",
     "folder_hint": "←  →  ↑  ↓ to browse   ·   Enter to open   ·   Esc to close",
-    "hint": "←  →  ↑  ↓ to browse   ·   Enter to apply   ·   Del to back   ·   Space for random   ·   Esc to close",
+    "hint": "←  →  ↑  ↓ to browse   ·   Enter to apply   ·   F favorite   ·   Del back   ·   Space random",
     "loading": "Loading...",
     "palette": "Palette",
     "palette_source_builtin": "Built-in",
@@ -24,7 +27,7 @@
   "settings": {
     "wallpaper_dir": {
       "label": "Base Wallpaper Directory",
-      "description": "Base directory for wallpapers. If no custom slots are configured, subfolders will be scanned."
+      "description": "Base directory for wallpapers. If no slots are configured below, subfolders will be scanned."
     },
     "apply_palette": {
       "label": "Apply Color Palette",
@@ -32,7 +35,7 @@
     },
     "notify_on_change": {
       "label": "Notify on Change",
-      "description": "Show a desktop notification when the wallpaper changes."
+      "description": "Show a desktop notification when the wallpaper or favorite status changes."
     },
     "close_on_apply": {
       "label": "Close on Apply",

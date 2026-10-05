@@ -9,6 +9,7 @@ local displayedIndex = 1
 local allWallpapers = {}
 local currentWallpaper = ""
 
+local favorites = {}
 local isScanning = false
 local navToken = 0
 local generatingPending = {}
@@ -32,9 +33,19 @@ local function makeSortKey(s)
   end)
 end
 
+local function getCornerRadius(base)
+  local scale = noctalia.getSetting("shell.corner_radius_scale")
+  if scale == nil then
+    scale = 1.0
+  end
+  return math.floor(base * scale)
+end
+
 local home = noctalia.getenv("HOME") or "~"
 local xdgCache = noctalia.getenv("XDG_CACHE_HOME")
 local cacheDir = (xdgCache and xdgCache ~= "" and xdgCache or (home .. "/.cache")) .. "/noctalia/wallpaper-widget/thumbnails"
+local xdgConfig = noctalia.getenv("XDG_CONFIG_HOME")
+local favoritesPath = (xdgConfig and xdgConfig ~= "" and xdgConfig or (home .. "/.config")) .. "/noctalia/wallpaper-widget-favorites.json"
 
 local cacheDirPrepared = false
 local function ensureCacheDir()
@@ -42,6 +53,52 @@ local function ensureCacheDir()
   cacheDirPrepared = true
   if not noctalia.fileExists(cacheDir) then
     noctalia.runAsync("mkdir -p " .. shellQuote(cacheDir))
+  end
+end
+
+local function loadFavorites()
+  favorites = {}
+  if noctalia.fileExists(favoritesPath) then
+    local content = noctalia.readFile(favoritesPath)
+    if content and content ~= "" then
+      local ok, data = pcall(function() return noctalia.json.decode(content) end)
+      if ok and type(data) == "table" then
+        favorites = data
+      end
+    end
+  end
+end
+
+local function saveFavorites()
+  local ok, encoded = pcall(function() return noctalia.json.encode(favorites) end)
+  if ok and encoded then
+    noctalia.writeFile(favoritesPath, encoded)
+  end
+end
+
+local function isFavorite(path)
+  if not path or path == "" then return false end
+  return favorites[path] == true
+end
+
+local render
+
+local function toggleFavorite(path)
+  if not path or path == "" then return end
+  if favorites[path] then
+    favorites[path] = nil
+    if noctalia.getConfig("notify_on_change") ~= false then
+      noctalia.notify(tr("panel.title"), tr("notify.favorite_removed"))
+    end
+  else
+    favorites[path] = true
+    if noctalia.getConfig("notify_on_change") ~= false then
+      noctalia.notify(tr("panel.title"), tr("notify.favorite_added"))
+    end
+  end
+  saveFavorites()
+  if render then
+    render()
   end
 end
 
@@ -67,8 +124,6 @@ local function makeGenerateCmd(src, dst)
     shellQuote(src), shellQuote(dst)
   )
 end
-
-local render
 
 local function resolveDisplayPath(originalPath)
   if not originalPath or originalPath == "" then return originalPath end
@@ -220,9 +275,10 @@ end
 
 local function loadAllFolders()
   isScanning = true
+  loadFavorites()
   local folderList = {}
 
-  -- 1. Read slots from plugin settings
+  -- 1. Read custom configured slots from plugin settings
   for i = 1, 8 do
     local slotDir = noctalia.getConfig("slot_" .. i .. "_dir")
     local slotType = noctalia.getConfig("slot_" .. i .. "_type") or "builtin"
@@ -328,6 +384,38 @@ local function loadAllFolders()
         sortKey = makeSortKey(rootName),
       })
     end
+  end
+
+  -- 3. Add Favorites collection if there are saved favorites that exist
+  local favList = {}
+  for favPath, _ in pairs(favorites) do
+    if noctalia.fileExists(favPath) then
+      local fname = favPath:match("([^/]+)$") or favPath
+      local cname = fname:gsub("%.%w+$", "")
+      table.insert(favList, {
+        path = favPath,
+        name = cname,
+        filename = fname,
+        sortKey = makeSortKey(cname),
+      })
+    end
+  end
+
+  if #favList > 0 then
+    table.sort(favList, function(a, b) return a.sortKey < b.sortKey end)
+    table.insert(folderList, 1, {
+      name = "★ " .. tr("panel.favorites"),
+      path = "favorites://",
+      coverPath = favList[1].path,
+      count = #favList,
+      wallpapers = favList,
+      palette = {
+        source = "wallpaper",
+        name = "soft",
+      },
+      sortKey = " 00000_favorites",
+      isFavoritesFolder = true,
+    })
   end
 
   allFolders = folderList
@@ -459,7 +547,7 @@ end
 
 local function backToFolders()
   viewMode = "folders"
-  render()
+  loadAllFolders()
 end
 
 local function applyFolderPalette(palette)
@@ -484,13 +572,13 @@ local function applyWallpaper(path)
     noctalia.runAsync("noctalia msg wallpaper-set " .. shellQuote(path))
   end
 
-  if activeFolder and activeFolder.palette then
+  if activeFolder and activeFolder.palette and not activeFolder.isFavoritesFolder then
     applyFolderPalette(activeFolder.palette)
   end
 
   if noctalia.getConfig("notify_on_change") ~= false then
     local fname = path:match("([^/]+)$") or path
-    if activeFolder and activeFolder.palette and activeFolder.palette.name ~= "" then
+    if activeFolder and activeFolder.palette and activeFolder.palette.name ~= "" and not activeFolder.isFavoritesFolder then
       noctalia.notify(tr("panel.title"), string.format("%s: %s\n%s: %s", tr("notify.switched"), fname, tr("panel.palette"), activeFolder.palette.name))
     else
       noctalia.notify(tr("panel.title"), tr("notify.switched") .. ": " .. fname)
@@ -530,6 +618,10 @@ local function applyRandomWallpaper()
 end
 
 render = function()
+  local rCenter = getCornerRadius(16)
+  local rSide = getCornerRadius(12)
+  local rBadge = getCornerRadius(8)
+
   if isScanning then
     panel.render(ui.column({
       align = "center",
@@ -589,6 +681,7 @@ render = function()
           width = 280,
           height = 158,
           fit = "cover",
+          radius = rSide,
           borderWidth = 0,
         }),
       }),
@@ -607,6 +700,7 @@ render = function()
           width = 460,
           height = 259,
           fit = "cover",
+          radius = rCenter,
           borderWidth = 3,
           border = "primary",
         }),
@@ -629,6 +723,7 @@ render = function()
           width = 280,
           height = 158,
           fit = "cover",
+          radius = rSide,
           borderWidth = 0,
         }),
       }),
@@ -641,17 +736,18 @@ render = function()
       ui.row({
         align = "center",
         justify = "center",
-        height = 22,
+        height = 24,
       }, {
         ui.row({
           align = "center",
-          gap = 4,
-          paddingH = 8,
-          paddingV = 2,
+          gap = 6,
+          paddingH = 10,
+          paddingV = 3,
+          radius = rBadge,
           fill = "primary/0.2",
         }, {
-          ui.glyph({ name = "palette", size = 13, color = "primary" }),
-          ui.label({ text = palDisplayName, fontSize = 10, fontWeight = "bold", color = "primary" }),
+          ui.glyph({ name = fCenter.isFavoritesFolder and "star" or "palette", size = 13, color = "primary" }),
+          ui.label({ text = palDisplayName, fontSize = 11, fontWeight = "bold", color = "primary" }),
         }),
       }),
 
@@ -701,6 +797,7 @@ render = function()
   local wpRight, idxRight = getDisplayedWallpaperAt(1)
 
   local isSelectedActive = (allWallpapers[selectedIndex].path == currentWallpaper)
+  local isCenterFav = isFavorite(wpCenter.path)
 
   local carouselRow = ui.row({
     align = "center",
@@ -725,6 +822,7 @@ render = function()
         width = 280,
         height = 158,
         fit = "cover",
+        radius = rSide,
         borderWidth = (wpLeft.path == currentWallpaper) and 2 or 0,
         border = (wpLeft.path == currentWallpaper) and "primary" or nil,
       }),
@@ -738,14 +836,38 @@ render = function()
         applyWallpaper(wpCenter.path)
       end,
     }, {
-      ui.image({
-        key = "img-center",
-        path = resolveDisplayPath(wpCenter.path),
+      ui.box({
         width = 460,
         height = 259,
-        fit = "cover",
-        borderWidth = (wpCenter.path == currentWallpaper) and 3 or 1,
-        border = (wpCenter.path == currentWallpaper) and "primary" or "outline",
+      }, {
+        ui.image({
+          key = "img-center",
+          path = resolveDisplayPath(wpCenter.path),
+          width = 460,
+          height = 259,
+          fit = "cover",
+          radius = rCenter,
+          borderWidth = (wpCenter.path == currentWallpaper) and 3 or 1,
+          border = (wpCenter.path == currentWallpaper) and "primary" or "outline",
+        }),
+        -- Single star in top right corner of the center card
+        ui.row({
+          position = "absolute",
+          top = 10,
+          right = 10,
+          padding = 6,
+          radius = getCornerRadius(6),
+          fill = "surface/0.65",
+          onClick = function()
+            toggleFavorite(wpCenter.path)
+          end,
+        }, {
+          ui.glyph({
+            name = isCenterFav and "star-filled" or "star",
+            size = 18,
+            color = isCenterFav and "primary" or "on_surface",
+          }),
+        }),
       }),
     }),
 
@@ -766,6 +888,7 @@ render = function()
         width = 280,
         height = 158,
         fit = "cover",
+        radius = rSide,
         borderWidth = (wpRight.path == currentWallpaper) and 2 or 0,
         border = (wpRight.path == currentWallpaper) and "primary" or nil,
       }),
@@ -786,6 +909,7 @@ render = function()
         gap = 4,
         paddingH = 8,
         paddingV = 2,
+        radius = rBadge,
         fill = "primary/0.2",
       }, {
         ui.glyph({ name = "check", size = 13, color = "primary" }),
@@ -849,6 +973,10 @@ function onKey(chord, pressed)
     end
   elseif chord == "Delete" or chord == "Backspace" or chord == "BackSpace" then
     backToFolders()
+  elseif chord == "f" or chord == "F" then
+    if #allWallpapers > 0 and selectedIndex >= 1 and selectedIndex <= #allWallpapers then
+      toggleFavorite(allWallpapers[selectedIndex].path)
+    end
   elseif chord == "Space" then
     applyRandomWallpaper()
   elseif chord == "Escape" then

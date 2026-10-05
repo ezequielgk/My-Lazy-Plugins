@@ -1,17 +1,20 @@
 {
   "notify": {
     "switched": "Fondo cambiado",
-    "switched_with_palette": "Fondo y paleta aplicados"
+    "favorite_added": "Añadido a favoritos",
+    "favorite_removed": "Eliminado de favoritos"
   },
   "panel": {
     "active": "ACTIVO",
+    "favorite": "Favorito",
+    "favorites": "Favoritos",
     "empty": "No se encontraron fondos en el directorio.",
     "empty_hint": "Añade imágenes (.png, .jpg, .jpeg, .webp) a tu carpeta de fondos.",
     "empty_folders": "No hay carpetas de fondos configuradas.",
     "empty_folders_hint": "Configura carpetas de fondos en Ajustes -> Plugins -> Wallpaper Widget.",
     "folders_count": "carpetas",
     "folder_hint": "←  →  ↑  ↓ explorar   ·   Enter entrar   ·   Esc cerrar",
-    "hint": "←  →  ↑  ↓ explorar   ·   Enter aplicar   ·   Del volver   ·   Espacio aleatorio   ·   Esc cerrar",
+    "hint": "←  →  ↑  ↓ explorar   ·   Enter aplicar   ·   F favorito   ·   Del volver   ·   Espacio aleatorio",
     "loading": "Cargando...",
     "palette": "Paleta",
     "palette_source_builtin": "Integrada",
@@ -32,7 +35,7 @@
     },
     "notify_on_change": {
       "label": "Notificar al Cambiar",
-      "description": "Muestra una notificación en el escritorio al cambiar el fondo."
+      "description": "Muestra una notificación en el escritorio al cambiar el fondo o favoritos."
     },
     "close_on_apply": {
       "label": "Cerrar al Aplicar",

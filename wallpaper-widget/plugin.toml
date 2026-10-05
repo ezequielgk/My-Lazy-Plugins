@@ -36,6 +36,8 @@ label_key = "settings.close_on_apply.label"
 description_key = "settings.close_on_apply.description"
 default = false
 
+# --- SLOTS DE COLECCIONES ---
+
 [[setting]]
 key = "slot_1_dir"
 type = "folder"
@@ -248,12 +250,12 @@ default = ""
 id = "hub"
 entry = "panel.luau"
 width = 1160
-height = 420
+height = 430
 placement = "floating"
 position = "center"
 dismiss_on_outside_click = true
 keyboard_focus = "exclusive"
-capture_keys = ["Left", "Right", "Up", "Down", "Return", "Escape", "Space", "Delete", "Backspace"]
+capture_keys = ["Left", "Right", "Up", "Down", "Return", "Escape", "Space", "Delete", "Backspace", "f", "F"]
 
 [[widget]]
 id = "widget"
