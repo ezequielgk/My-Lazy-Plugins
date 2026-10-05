@@ -19,6 +19,7 @@ local addPaletteType = "builtin"
 local addPaletteName = "Nord"
 local addPaletteSearch = ""
 local addErrorMessage = ""
+local isPaletteDropdownOpen = false
 
 math.randomseed(math.floor((os.clock() * 1000000) % 2147483647) + os.time())
 
@@ -660,6 +661,7 @@ local function openAddCollection()
   addPaletteName = BUILTIN_PALETTES[1] or "Nord"
   addPaletteSearch = ""
   addErrorMessage = ""
+  isPaletteDropdownOpen = false
   if render and isOpen then render() end
 end
 
@@ -813,57 +815,96 @@ render = function()
         end
       end
 
-      local paletteGridRows = {}
-      for _, pName in ipairs(filteredPalettes) do
-        local isChosen = (pName == addPaletteName)
-        table.insert(paletteGridRows, ui.button({
-          text = pName,
-          variant = isChosen and "primary" or "ghost",
-          controlSize = "sm",
-          justify = "start",
-          onClick = function()
-            addPaletteName = pName
-            if render and isOpen then render() end
-          end,
-        }))
-      end
+      local paletteSelectorControl
+      if isPaletteDropdownOpen then
+        local paletteGridRows = {}
+        for _, pName in ipairs(filteredPalettes) do
+          local isChosen = (pName == addPaletteName)
+          table.insert(paletteGridRows, ui.button({
+            text = pName,
+            variant = isChosen and "primary" or "ghost",
+            controlSize = "sm",
+            justify = "start",
+            onClick = function()
+              addPaletteName = pName
+              isPaletteDropdownOpen = false
+              if render and isOpen then render() end
+            end,
+          }))
+        end
 
-      local paletteSelectorControl = ui.column({ gap = 4 }, {
-        ui.input({
-          key = "search_palette_input_" .. addPaletteType,
-          placeholder = "Filtrar paletas...",
-          value = addPaletteSearch,
+        paletteSelectorControl = ui.column({ gap = 6, width = 466 }, {
+          ui.row({ align = "center", justify = "space_between", width = 466 }, {
+            ui.input({
+              key = "search_palette_input_" .. addPaletteType,
+              placeholder = tr("panel.search") or "Filtrar...",
+              value = addPaletteSearch,
+              width = 360,
+              onChange = function(val)
+                addPaletteSearch = val or ""
+                if render and isOpen then render() end
+              end,
+            }),
+            ui.label({
+              text = tostring(#filteredPalettes) .. " / " .. tostring(#availablePalettes),
+              fontSize = 11,
+              color = "on_surface_variant"
+            }),
+          }),
+          #paletteGridRows > 0 and ui.scroll({
+            height = 140,
+            gap = 2,
+          }, paletteGridRows) or ui.label({
+            text = "Sin resultados.",
+            fontSize = 11,
+            color = "on_surface_variant",
+          }),
+        })
+      else
+        local dispName = (addPaletteName ~= "" and addPaletteName or "-")
+        if #availablePalettes == 0 then
+          dispName = tr("panel.empty") or "No hay paletas"
+        end
+        
+        paletteSelectorControl = ui.row({
           width = 466,
-          onChange = function(val)
-            addPaletteSearch = val or ""
-            if render and isOpen then render() end
-          end,
-        }),
-        #paletteGridRows > 0 and ui.scroll({
-          height = 120,
-          gap = 2,
-        }, paletteGridRows) or ui.label({
-          text = "Sin resultados.",
-          fontSize = 11,
-          color = "on_surface_variant",
-        }),
-      })
+          height = 32,
+          paddingH = 12,
+          align = "center",
+          justify = "space_between",
+          radius = 6,
+          borderWidth = 1,
+          border = "outline",
+          fill = "surface_variant/0.5",
+          onClick = function()
+            if #availablePalettes > 0 then
+              isPaletteDropdownOpen = true
+              addPaletteSearch = ""
+              if render and isOpen then render() end
+            end
+          end
+        }, {
+          ui.label({ text = dispName, fontSize = 12, color = (#availablePalettes > 0 and "on_surface" or "on_surface_variant") }),
+          ui.glyph({ name = "chevron-down", size = 16, color = "on_surface_variant" })
+        })
+      end
 
       local cardItems = {
         ui.row({
           align = "center",
           justify = "space_between",
+          width = 466,
         }, {
           ui.row({
             align = "center",
             gap = 8,
             paddingH = 12,
             paddingV = 4,
-            radius = 6,
-            fill = "surface_variant/0.45",
+            radius = rBadge,
+            fill = "primary/0.2",
           }, {
-            ui.glyph({ name = "folder-plus", size = 16, color = "on_surface" }),
-            ui.label({ text = tr("panel.add_collection_title"), fontSize = 13, fontWeight = "bold", color = "on_surface" }),
+            ui.glyph({ name = "folder-plus", size = 16, color = "primary" }),
+            ui.label({ text = tr("panel.add_collection_title"), fontSize = 13, fontWeight = "bold", color = "primary" }),
           }),
           ui.button({
             glyph = "x",
@@ -895,76 +936,60 @@ render = function()
 
         ui.column({ gap = 6 }, {
           ui.label({ text = tr("panel.palette_type"), fontSize = 12, fontWeight = "bold", color = "on_surface" }),
-          ui.column({ gap = 6 }, {
-            ui.row({ gap = 8, align = "center" }, {
-              ui.button({
-                text = tr("panel.palette_source_builtin"),
-                variant = (addPaletteType == "builtin") and "primary" or "ghost",
-                controlSize = "sm",
-                onClick = function()
-                  addPaletteType = "builtin"
-                  addPaletteSearch = ""
-                  addPaletteName = BUILTIN_PALETTES[1] or "Nord"
-                  if render and isOpen then render() end
-                end,
-              }),
-              ui.button({
-                text = tr("panel.palette_source_wallpaper"),
-                variant = (addPaletteType == "wallpaper") and "primary" or "ghost",
-                controlSize = "sm",
-                onClick = function()
-                  addPaletteType = "wallpaper"
-                  addPaletteSearch = ""
-                  addPaletteName = WALLPAPER_PALETTES[1] or "soft"
-                  if render and isOpen then render() end
-                end,
-              }),
+          ui.row({ gap = 6, align = "center", width = 466 }, {
+            ui.button({
+              text = tr("panel.palette_source_builtin"),
+              variant = (addPaletteType == "builtin") and "primary" or "ghost",
+              controlSize = "sm",
+              flexGrow = 1,
+              onClick = function()
+                addPaletteType = "builtin"
+                isPaletteDropdownOpen = false
+                addPaletteName = BUILTIN_PALETTES[1] or "Nord"
+                if render and isOpen then render() end
+              end,
             }),
-            ui.row({ gap = 8, align = "center" }, {
-              ui.button({
-                text = tr("panel.palette_source_custom"),
-                variant = (addPaletteType == "custom") and "primary" or "ghost",
-                controlSize = "sm",
-                onClick = function()
-                  addPaletteType = "custom"
-                  addPaletteSearch = ""
-                  addPaletteName = getCustomPalettes()[1] or ""
-                  if render and isOpen then render() end
-                end,
-              }),
-              ui.button({
-                text = tr("panel.palette_source_community"),
-                variant = (addPaletteType == "community") and "primary" or "ghost",
-                controlSize = "sm",
-                onClick = function()
-                  addPaletteType = "community"
-                  addPaletteSearch = ""
-                  addPaletteName = getCommunityPalettes()[1] or ""
-                  if render and isOpen then render() end
-                end,
-              }),
+            ui.button({
+              text = tr("panel.palette_source_wallpaper"),
+              variant = (addPaletteType == "wallpaper") and "primary" or "ghost",
+              controlSize = "sm",
+              flexGrow = 1,
+              onClick = function()
+                addPaletteType = "wallpaper"
+                isPaletteDropdownOpen = false
+                addPaletteName = WALLPAPER_PALETTES[1] or "soft"
+                if render and isOpen then render() end
+              end,
+            }),
+            ui.button({
+              text = tr("panel.palette_source_custom"),
+              variant = (addPaletteType == "custom") and "primary" or "ghost",
+              controlSize = "sm",
+              flexGrow = 1,
+              onClick = function()
+                addPaletteType = "custom"
+                isPaletteDropdownOpen = false
+                addPaletteName = getCustomPalettes()[1] or ""
+                if render and isOpen then render() end
+              end,
+            }),
+            ui.button({
+              text = tr("panel.palette_source_community"),
+              variant = (addPaletteType == "community") and "primary" or "ghost",
+              controlSize = "sm",
+              flexGrow = 1,
+              onClick = function()
+                addPaletteType = "community"
+                isPaletteDropdownOpen = false
+                addPaletteName = getCommunityPalettes()[1] or ""
+                if render and isOpen then render() end
+              end,
             }),
           }),
         }),
 
         ui.column({ gap = 6 }, {
-          ui.row({
-            align = "center",
-            justify = "space_between",
-          }, {
-            ui.label({ text = tr("panel.palette_name"), fontSize = 12, fontWeight = "bold", color = "on_surface" }),
-            ui.row({
-              align = "center",
-              gap = 6,
-              paddingH = 10,
-              paddingV = 4,
-              radius = rBadge,
-              fill = "primary/0.25",
-            }, {
-              ui.glyph({ name = "palette", size = 12, color = "primary" }),
-              ui.label({ text = (addPaletteName ~= "" and addPaletteName or "-"), fontSize = 11, fontWeight = "bold", color = "primary" }),
-            }),
-          }),
+          ui.label({ text = tr("panel.palette_name"), fontSize = 12, fontWeight = "bold", color = "on_surface" }),
           paletteSelectorControl,
         }),
       }
@@ -980,7 +1005,7 @@ render = function()
 
       table.insert(cardItems, ui.row({
         align = "center",
-        justify = "end",
+        justify = "center",
         gap = 10,
         paddingV = 4,
       }, {
@@ -994,7 +1019,7 @@ render = function()
           end,
         }),
         ui.button({
-          text = tr("panel.save"),
+          text = tr("panel.add_collection"),
           glyph = "check",
           variant = "primary",
           controlSize = "md",
@@ -1002,13 +1027,6 @@ render = function()
             submitAddCollection()
           end,
         }),
-      }))
-
-      table.insert(cardItems, ui.label({
-        text = tr("panel.manage_collections_hint"),
-        fontSize = 10,
-        color = "on_surface_variant",
-        opacity = 0.7,
       }))
 
       panel.render(ui.column({
@@ -1021,9 +1039,9 @@ render = function()
         ui.column({
           key = "add_collection_card",
           width = 510,
-          gap = 14,
+          gap = 16,
           padding = 22,
-          radius = rCenter,
+          radius = 16,
           fill = "surface_variant/0.3",
           borderWidth = 1,
           border = "outline",
@@ -1308,8 +1326,13 @@ function onKey(chord, pressed)
   local ok, err = pcall(function()
     if viewMode == "add_collection" then
       if c == "escape" then
-        viewMode = "folders"
-        if render and isOpen then render() end
+        if isPaletteDropdownOpen then
+          isPaletteDropdownOpen = false
+          if render and isOpen then render() end
+        else
+          viewMode = "folders"
+          if render and isOpen then render() end
+        end
       elseif c == "return" or c == "enter" or c == "kp_enter" then
         submitAddCollection()
       end
