@@ -693,21 +693,6 @@ local function backToFolders()
   end)
 end
 
-local function browseFolderDialog()
-  local title = tr("panel.folder_path")
-  local cmd = "zenity --file-selection --directory --title=" .. shellQuote(title) .. " 2>/dev/null || yad --file --directory --title=" .. shellQuote(title) .. " 2>/dev/null"
-  noctalia.runAsync(cmd, function(result)
-    if result and result.exitCode == 0 and result.stdout then
-      local path = result.stdout:gsub("%s+$", "")
-      if path ~= "" then
-        addFolderPath = path
-        addErrorMessage = ""
-        render()
-      end
-    end
-  end)
-end
-
 local function openAddCollection()
   viewMode = "add_collection"
   addFolderPath = ""
@@ -960,32 +945,21 @@ render = function()
         }),
       }),
 
-      -- 1. Folder Path with native file chooser button
+      -- 1. Folder Path
       ui.column({ gap = 5 }, {
         ui.label({ text = tr("panel.folder_path"), fontSize = 12, fontWeight = "bold", color = "on_surface" }),
-        ui.row({ gap = 8, align = "center" }, {
-          ui.input({
-            key = "add_folder_input",
-            placeholder = tr("panel.folder_path_placeholder"),
-            value = addFolderPath,
-            width = 420,
-            onChange = function(val)
-              addFolderPath = val or ""
-              addErrorMessage = ""
-            end,
-            onSubmit = function()
-              submitAddCollection()
-            end,
-          }),
-          ui.button({
-            glyph = "folder",
-            variant = "outline",
-            controlSize = "md",
-            tooltip = tr("panel.folder_path"),
-            onClick = function()
-              browseFolderDialog()
-            end,
-          }),
+        ui.input({
+          key = "add_folder_input",
+          placeholder = tr("panel.folder_path_placeholder"),
+          value = addFolderPath,
+          width = 466,
+          onChange = function(val)
+            addFolderPath = val or ""
+            addErrorMessage = ""
+          end,
+          onSubmit = function()
+            submitAddCollection()
+          end,
         }),
       }),
 
@@ -1080,13 +1054,22 @@ render = function()
       }),
     }))
 
+    table.insert(cardItems, ui.label({
+      text = tr("panel.manage_collections_hint"),
+      fontSize = 10,
+      color = "on_surface_variant",
+      opacity = 0.7,
+    }))
+
     panel.render(ui.column({
+      key = "view_add_collection_root",
       width = 1160,
       height = 430,
       align = "center",
       justify = "center",
     }, {
       ui.column({
+        key = "add_collection_card",
         width = 510,
         gap = 14,
         padding = 22,
@@ -1195,6 +1178,7 @@ render = function()
     })
 
     local infoSection = ui.column({
+      key = "folders_info_section",
       align = "center",
       gap = 4,
     }, {
@@ -1227,20 +1211,16 @@ render = function()
         fontSize = 11,
         color = "on_surface_variant",
       }),
-
-      ui.label({
-        text = tr("panel.manage_collections_hint"),
-        fontSize = 10,
-        color = "on_surface_variant",
-        opacity = 0.75,
-      }),
     })
 
     panel.render(ui.column({
+      key = "view_folders_root",
+      width = 1160,
+      height = 430,
       padding = 24,
       gap = 14,
-      align = "stretch",
-      flexGrow = 1,
+      align = "center",
+      justify = "center",
     }, {
       carouselRow,
       infoSection,
@@ -1410,10 +1390,13 @@ render = function()
   })
 
   panel.render(ui.column({
+    key = "view_wallpapers_root",
+    width = 1160,
+    height = 430,
     padding = 24,
     gap = 14,
-    align = "stretch",
-    flexGrow = 1,
+    align = "center",
+    justify = "center",
   }, {
     carouselRow,
     infoSection,
