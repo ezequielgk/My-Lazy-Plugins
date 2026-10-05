@@ -56,6 +56,8 @@ local xdgCache = noctalia.getenv("XDG_CACHE_HOME")
 local cacheDir = (xdgCache and xdgCache ~= "" and xdgCache or (home .. "/.cache")) .. "/noctalia/wallpaper-widget/thumbnails"
 local xdgConfig = noctalia.getenv("XDG_CONFIG_HOME")
 local configBaseDir = (xdgConfig and xdgConfig ~= "" and xdgConfig or (home .. "/.config")) .. "/noctalia"
+local xdgState = noctalia.getenv("XDG_STATE_HOME")
+local stateBaseDir = (xdgState and xdgState ~= "" and xdgState or (home .. "/.local/state")) .. "/noctalia"
 local favoritesPath = configBaseDir .. "/wallpaper-widget-favorites.json"
 local collectionsPath = configBaseDir .. "/wallpaper-collections.json"
 
@@ -75,7 +77,10 @@ local function getCustomPalettes()
   if files then
     for _, f in ipairs(files) do
       if f:match("%.json$") and f ~= "registry.json" and f ~= "_live_preview.json" then
-        table.insert(list, f:gsub("%.json$", ""))
+        local name = f:match("^(.-)%.json$")
+        if name and name ~= "" then
+          table.insert(list, name)
+        end
       end
     end
   end
@@ -85,15 +90,37 @@ end
 
 local function getCommunityPalettes()
   local list = {}
-  local cDir = configBaseDir .. "/community-palettes"
-  local files = noctalia.listDir(cDir)
-  if files then
-    for _, f in ipairs(files) do
-      if f:match("%.json$") then
-        table.insert(list, f:gsub("%.json$", ""))
+  local catalogPath = stateBaseDir .. "/community-palettes/.catalog/palettes.json"
+  if noctalia.fileExists(catalogPath) then
+    local content = noctalia.readFile(catalogPath)
+    if content and content ~= "" then
+      local ok, data = pcall(function() return noctalia.json.decode(content) end)
+      if ok and type(data) == "table" then
+        for _, entry in ipairs(data) do
+          if entry.name and type(entry.name) == "string" then
+            table.insert(list, entry.name)
+          end
+        end
       end
     end
   end
+
+  if #list == 0 then
+    local commDir = stateBaseDir .. "/community-palettes"
+    local files = noctalia.listDir(commDir)
+    if files then
+      for _, f in ipairs(files) do
+        if f:match("%.json$") and f ~= "palettes.json" then
+          local name = f:match("^(.-)%.json$")
+          if name and name ~= "" then
+            name = name:gsub("%%20", " ")
+            table.insert(list, name)
+          end
+        end
+      end
+    end
+  end
+
   table.sort(list)
   return list
 end
@@ -177,6 +204,12 @@ local function resolveFolderPalette(folderName)
   for _, cName in ipairs(customs) do
     if norm == normalizeName(cName) then
       return { source = "custom", name = cName }
+    end
+  end
+  local comms = getCommunityPalettes()
+  for _, cName in ipairs(comms) do
+    if norm == normalizeName(cName) then
+      return { source = "community", name = cName }
     end
   end
   return { source = "wallpaper", name = "soft" }
@@ -782,9 +815,10 @@ render = function()
 
   if isScanning then
     panel.render(ui.column({
+      width = 1160,
+      height = 430,
       align = "center",
       justify = "center",
-      flexGrow = 1,
       gap = 12,
       padding = 40,
     }, {
@@ -811,6 +845,7 @@ render = function()
         key = "palette_selector_" .. addPaletteType,
         options = availablePalettes,
         selectedIndex = paletteSelectedIdx,
+        width = 496,
         onChange = function(val, idx)
           if type(val) == "string" then
             addPaletteName = val
@@ -831,6 +866,7 @@ render = function()
           key = "custom_palette_input",
           placeholder = tr("panel.palette_name"),
           value = addPaletteName,
+          width = 496,
           onChange = function(val) addPaletteName = val or "" end,
           onSubmit = function() submitAddCollection() end,
         }),
@@ -838,39 +874,18 @@ render = function()
       })
     end
 
-    -- Palette quick-pick chips
-    local quickChips = {}
-    if #availablePalettes > 0 then
-      local maxChips = math.min(#availablePalettes, 8)
-      for i = 1, maxChips do
-        local pName = availablePalettes[i]
-        local isChosen = (pName == addPaletteName)
-        table.insert(quickChips, ui.button({
-          text = pName,
-          controlSize = "sm",
-          fill = isChosen and "primary/0.25" or nil,
-          borderWidth = isChosen and 2 or 1,
-          border = isChosen and "primary" or "outline",
-          onClick = function()
-            addPaletteName = pName
-            render()
-          end,
-        }))
-      end
-    end
-
     panel.render(ui.column({
+      width = 1160,
+      height = 430,
       align = "center",
       justify = "center",
-      flexGrow = 1,
-      padding = 24,
     }, {
       ui.column({
-        width = 560,
-        gap = 12,
-        padding = 18,
+        width = 540,
+        gap = 14,
+        padding = 22,
         radius = rCenter,
-        fill = "surface_variant/0.3",
+        fill = "surface_variant/0.35",
         borderWidth = 1,
         border = "outline",
       }, {
@@ -885,6 +900,7 @@ render = function()
           }),
           ui.button({
             glyph = "x",
+            variant = "ghost",
             controlSize = "sm",
             onClick = function()
               viewMode = "folders"
@@ -894,12 +910,13 @@ render = function()
         }),
 
         -- 1. Folder Path
-        ui.column({ gap = 4 }, {
+        ui.column({ gap = 5 }, {
           ui.label({ text = tr("panel.folder_path"), fontSize = 12, fontWeight = "bold", color = "on_surface" }),
           ui.input({
             key = "add_folder_input",
             placeholder = tr("panel.folder_path_placeholder"),
             value = addFolderPath,
+            width = 496,
             onChange = function(val)
               addFolderPath = val or ""
               addErrorMessage = ""
@@ -910,15 +927,13 @@ render = function()
           }),
         }),
 
-        -- 2. Palette Type Selector (Pills)
+        -- 2. Palette Type Selector (Buttons)
         ui.column({ gap = 6 }, {
           ui.label({ text = tr("panel.palette_type"), fontSize = 12, fontWeight = "bold", color = "on_surface" }),
-          ui.row({ gap = 8 }, {
+          ui.row({ gap = 8, align = "center" }, {
             ui.button({
               text = tr("panel.palette_source_builtin"),
-              fill = (addPaletteType == "builtin") and "primary/0.25" or nil,
-              borderWidth = (addPaletteType == "builtin") and 2 or 1,
-              border = (addPaletteType == "builtin") and "primary" or "outline",
+              variant = (addPaletteType == "builtin") and "primary" or "outline",
               controlSize = "sm",
               onClick = function()
                 addPaletteType = "builtin"
@@ -928,9 +943,7 @@ render = function()
             }),
             ui.button({
               text = tr("panel.palette_source_wallpaper"),
-              fill = (addPaletteType == "wallpaper") and "primary/0.25" or nil,
-              borderWidth = (addPaletteType == "wallpaper") and 2 or 1,
-              border = (addPaletteType == "wallpaper") and "primary" or "outline",
+              variant = (addPaletteType == "wallpaper") and "primary" or "outline",
               controlSize = "sm",
               onClick = function()
                 addPaletteType = "wallpaper"
@@ -940,9 +953,7 @@ render = function()
             }),
             ui.button({
               text = tr("panel.palette_source_custom"),
-              fill = (addPaletteType == "custom") and "primary/0.25" or nil,
-              borderWidth = (addPaletteType == "custom") and 2 or 1,
-              border = (addPaletteType == "custom") and "primary" or "outline",
+              variant = (addPaletteType == "custom") and "primary" or "outline",
               controlSize = "sm",
               onClick = function()
                 addPaletteType = "custom"
@@ -953,9 +964,7 @@ render = function()
             }),
             ui.button({
               text = tr("panel.palette_source_community"),
-              fill = (addPaletteType == "community") and "primary/0.25" or nil,
-              borderWidth = (addPaletteType == "community") and 2 or 1,
-              border = (addPaletteType == "community") and "primary" or "outline",
+              variant = (addPaletteType == "community") and "primary" or "outline",
               controlSize = "sm",
               onClick = function()
                 addPaletteType = "community"
@@ -971,7 +980,6 @@ render = function()
         ui.column({ gap = 6 }, {
           ui.label({ text = tr("panel.palette_name"), fontSize = 12, fontWeight = "bold", color = "on_surface" }),
           paletteSelectorControl,
-          #quickChips > 0 and ui.row({ gap = 6, align = "center" }, quickChips) or nil,
         }),
 
         -- Error display if any
@@ -990,6 +998,7 @@ render = function()
         }, {
           ui.button({
             text = tr("panel.cancel"),
+            variant = "outline",
             controlSize = "sm",
             onClick = function()
               viewMode = "folders"
@@ -999,9 +1008,7 @@ render = function()
           ui.button({
             text = tr("panel.save"),
             glyph = "check",
-            fill = "primary/0.25",
-            borderWidth = 1,
-            border = "primary",
+            variant = "primary",
             controlSize = "sm",
             onClick = function()
               submitAddCollection()
@@ -1017,9 +1024,10 @@ render = function()
   if viewMode == "folders" then
     if #allFolders == 0 then
       panel.render(ui.column({
+        width = 1160,
+        height = 430,
         align = "center",
         justify = "center",
-        flexGrow = 1,
         gap = 12,
         padding = 40,
       }, {
@@ -1164,9 +1172,10 @@ render = function()
   -- VIEW MODE: WALLPAPERS (LEVEL 2)
   if #allWallpapers == 0 then
     panel.render(ui.column({
+      width = 1160,
+      height = 430,
       align = "center",
       justify = "center",
-      flexGrow = 1,
       gap = 12,
       padding = 40,
     }, {
