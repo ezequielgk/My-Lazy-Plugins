@@ -990,8 +990,8 @@ render = function()
               end,
             }),
             ui.button({
-              text = tr("panel.palette_source_none"),
-              variant = (addPaletteType == "none") and "primary" or "ghost",
+              glyph = "x",
+              variant = (addPaletteType == "none") and "destructive" or "ghost",
               controlSize = "sm",
               onClick = function()
                 addPaletteType = "none"
