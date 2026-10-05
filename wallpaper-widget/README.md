@@ -1,6 +1,6 @@
 # Wallpaper Widget
 
-A cinematic horizontal wallpaper switcher carousel and interactive bar widget for Noctalia with automatic palette synchronization, favorites, and custom folder slots.
+A cinematic horizontal wallpaper switcher carousel and interactive bar widget for Noctalia with automatic palette synchronization, collections, and favorites.
 
 ## Plugin
 
@@ -29,14 +29,14 @@ noctalia msg panel-toggle ezequielgk/wallpaper-widget:hub
   - `Esc`: Close the panel.
 
 #### Level 2: Wallpapers Carousel
-- **Spotlight Card**: Clean 3-card horizontal carousel.
-- **Active Indicator**: Highlights the currently active wallpaper with the primary border.
-- **Single Star Favorite Button**: Located in the top right corner of the center card (`star` outline when not favorited, `star-filled` when favorited).
+- **Original Clean Carousel**: Clean 3-card horizontal layout with direct image rendering.
+- **Active Indicator**: Highlights the currently active wallpaper with the primary border and an `ACTIVE` badge.
+- **Favorite Badge & Toggle**: A clean badge located in the info section below the spotlight card (`star` outline when not favorited, `star-filled` with primary accent when favorited).
 - **Auto-Palette Switch**: Applying a wallpaper automatically applies the folder's configured palette in Noctalia.
 - **Controls**:
   - `←` / `→` (or `↑` / `↓`): Browse wallpapers.
   - `Enter`: Apply the selected wallpaper and its assigned palette.
-  - `F` (or click on the star): Toggle favorite status.
+  - `F` (or click on the favorite badge): Toggle favorite status.
   - `Del` / `Backspace`: Return back to the Collections view.
   - `Space`: Apply a random wallpaper from this folder.
   - `Esc`: Close the panel.
@@ -50,18 +50,35 @@ noctalia msg panel-toggle ezequielgk/wallpaper-widget:hub
 
 ## Configuration (Settings -> Plugins -> Wallpaper Widget)
 
-All collections and palette mappings are configured entirely in Noctalia's plugin settings:
+All settings in Noctalia's plugin menu are clean and global:
 
-- **`wallpaper_dir`**: Default base wallpaper directory (used as fallback if no custom slots are configured).
+- **`wallpaper_dir`**: Default base wallpaper directory (automatically scans subfolders).
 - **`apply_palette`**: Automatically apply the assigned palette to Noctalia when choosing a wallpaper.
 - **`notify_on_change`**: Send desktop notification when switching wallpaper or modifying favorites.
 - **`close_on_apply`**: Automatically close the carousel after applying a wallpaper.
-- **Slots 1 to 8**:
-  - **Folder**: Path to the wallpaper folder for this slot.
-  - **Palette Type**: Select `Built-in`, `Wallpaper (Dynamic)`, `Community`, or `Custom`.
-  - **Palette Name**: The exact name of the palette (e.g. `Nord`, `Gruvbox`, `Dim`, `soft`). Leave empty to automatically use the folder's name.
 
-Favorites are persisted across sessions in `~/.config/noctalia/wallpaper-widget-favorites.json`.
+### Custom Collections File (Optional)
+
+To define explicit collections, you can place a file at `~/.config/noctalia/wallpaper-collections.json`:
+
+```json
+[
+  {
+    "name": "Nord",
+    "path": "~/Imágenes/Wallpapers/Nord",
+    "palette_type": "builtin",
+    "palette": "Nord"
+  },
+  {
+    "name": "Slatemist",
+    "path": "~/Imágenes/Wallpapers/bjork/Slatemist/dark",
+    "palette_type": "custom",
+    "palette": "Dim"
+  }
+]
+```
+
+Favorites are automatically persisted in `~/.config/noctalia/wallpaper-widget-favorites.json`.
 
 ## License
 

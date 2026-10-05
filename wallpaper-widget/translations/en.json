@@ -6,12 +6,12 @@
   },
   "panel": {
     "active": "ACTIVE",
-    "favorite": "Favorite",
+    "favorite": "FAVORITE",
     "favorites": "Favorites",
     "empty": "No wallpapers found in directory.",
     "empty_hint": "Add images (.png, .jpg, .jpeg, .webp) to your wallpapers folder.",
-    "empty_folders": "No wallpaper folders configured.",
-    "empty_folders_hint": "Configure wallpaper folders in Settings -> Plugins -> Wallpaper Widget.",
+    "empty_folders": "No wallpaper folders found.",
+    "empty_folders_hint": "Add subfolders with images in your wallpapers folder or in ~/.config/noctalia/wallpaper-collections.json",
     "folders_count": "folders",
     "folder_hint": "←  →  ↑  ↓ to browse   ·   Enter to open   ·   Esc to close",
     "hint": "←  →  ↑  ↓ to browse   ·   Enter to apply   ·   F favorite   ·   Del back   ·   Space random",
@@ -26,12 +26,12 @@
   },
   "settings": {
     "wallpaper_dir": {
-      "label": "Base Wallpaper Directory",
-      "description": "Base directory for wallpapers. If no slots are configured below, subfolders will be scanned."
+      "label": "Wallpaper Directory",
+      "description": "Path to your wallpapers folder containing collection subfolders. Leave empty to use Noctalia's default."
     },
     "apply_palette": {
       "label": "Apply Color Palette",
-      "description": "Automatically apply the folder's assigned color palette to Noctalia when applying a wallpaper."
+      "description": "Automatically apply the collection's assigned color palette to Noctalia when applying a wallpaper."
     },
     "notify_on_change": {
       "label": "Notify on Change",
@@ -40,106 +40,6 @@
     "close_on_apply": {
       "label": "Close on Apply",
       "description": "Automatically close the Wallpaper Widget carousel after applying a wallpaper."
-    },
-    "type_builtin": "Built-in",
-    "type_wallpaper": "Wallpaper (Dynamic)",
-    "type_community": "Community",
-    "type_custom": "Custom",
-    "slot_1_dir": {
-      "label": "Slot 1: Folder",
-      "description": "Wallpaper folder path for Slot 1."
-    },
-    "slot_1_type": {
-      "label": "Slot 1: Palette Type",
-      "description": "Palette source type for Slot 1 (built-in, wallpaper, community, or custom)."
-    },
-    "slot_1_palette": {
-      "label": "Slot 1: Palette Name",
-      "description": "Palette name for Slot 1 (e.g. Nord, Gruvbox, Dim, soft). Leave empty to match folder name."
-    },
-    "slot_2_dir": {
-      "label": "Slot 2: Folder",
-      "description": "Wallpaper folder path for Slot 2."
-    },
-    "slot_2_type": {
-      "label": "Slot 2: Palette Type",
-      "description": "Palette source type for Slot 2 (built-in, wallpaper, community, or custom)."
-    },
-    "slot_2_palette": {
-      "label": "Slot 2: Palette Name",
-      "description": "Palette name for Slot 2 (e.g. Nord, Gruvbox, Dim, soft). Leave empty to match folder name."
-    },
-    "slot_3_dir": {
-      "label": "Slot 3: Folder",
-      "description": "Wallpaper folder path for Slot 3."
-    },
-    "slot_3_type": {
-      "label": "Slot 3: Palette Type",
-      "description": "Palette source type for Slot 3 (built-in, wallpaper, community, or custom)."
-    },
-    "slot_3_palette": {
-      "label": "Slot 3: Palette Name",
-      "description": "Palette name for Slot 3 (e.g. Nord, Gruvbox, Dim, soft). Leave empty to match folder name."
-    },
-    "slot_4_dir": {
-      "label": "Slot 4: Folder",
-      "description": "Wallpaper folder path for Slot 4."
-    },
-    "slot_4_type": {
-      "label": "Slot 4: Palette Type",
-      "description": "Palette source type for Slot 4 (built-in, wallpaper, community, or custom)."
-    },
-    "slot_4_palette": {
-      "label": "Slot 4: Palette Name",
-      "description": "Palette name for Slot 4 (e.g. Nord, Gruvbox, Dim, soft). Leave empty to match folder name."
-    },
-    "slot_5_dir": {
-      "label": "Slot 5: Folder",
-      "description": "Wallpaper folder path for Slot 5."
-    },
-    "slot_5_type": {
-      "label": "Slot 5: Palette Type",
-      "description": "Palette source type for Slot 5 (built-in, wallpaper, community, or custom)."
-    },
-    "slot_5_palette": {
-      "label": "Slot 5: Palette Name",
-      "description": "Palette name for Slot 5 (e.g. Nord, Gruvbox, Dim, soft). Leave empty to match folder name."
-    },
-    "slot_6_dir": {
-      "label": "Slot 6: Folder",
-      "description": "Wallpaper folder path for Slot 6."
-    },
-    "slot_6_type": {
-      "label": "Slot 6: Palette Type",
-      "description": "Palette source type for Slot 6 (built-in, wallpaper, community, or custom)."
-    },
-    "slot_6_palette": {
-      "label": "Slot 6: Palette Name",
-      "description": "Palette name for Slot 6 (e.g. Nord, Gruvbox, Dim, soft). Leave empty to match folder name."
-    },
-    "slot_7_dir": {
-      "label": "Slot 7: Folder",
-      "description": "Wallpaper folder path for Slot 7."
-    },
-    "slot_7_type": {
-      "label": "Slot 7: Palette Type",
-      "description": "Palette source type for Slot 7 (built-in, wallpaper, community, or custom)."
-    },
-    "slot_7_palette": {
-      "label": "Slot 7: Palette Name",
-      "description": "Palette name for Slot 7 (e.g. Nord, Gruvbox, Dim, soft). Leave empty to match folder name."
-    },
-    "slot_8_dir": {
-      "label": "Slot 8: Folder",
-      "description": "Wallpaper folder path for Slot 8."
-    },
-    "slot_8_type": {
-      "label": "Slot 8: Palette Type",
-      "description": "Palette source type for Slot 8 (built-in, wallpaper, community, or custom)."
-    },
-    "slot_8_palette": {
-      "label": "Slot 8: Palette Name",
-      "description": "Palette name for Slot 8 (e.g. Nord, Gruvbox, Dim, soft). Leave empty to match folder name."
     }
   },
   "shortcut": {

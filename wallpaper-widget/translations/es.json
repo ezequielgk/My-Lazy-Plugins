@@ -6,12 +6,12 @@
   },
   "panel": {
     "active": "ACTIVO",
-    "favorite": "Favorito",
+    "favorite": "FAVORITO",
     "favorites": "Favoritos",
     "empty": "No se encontraron fondos en el directorio.",
     "empty_hint": "Añade imágenes (.png, .jpg, .jpeg, .webp) a tu carpeta de fondos.",
-    "empty_folders": "No hay carpetas de fondos configuradas.",
-    "empty_folders_hint": "Configura carpetas de fondos en Ajustes -> Plugins -> Wallpaper Widget.",
+    "empty_folders": "No se encontraron carpetas de fondos.",
+    "empty_folders_hint": "Añade subcarpetas con imágenes o configúralas en ~/.config/noctalia/wallpaper-collections.json",
     "folders_count": "carpetas",
     "folder_hint": "←  →  ↑  ↓ explorar   ·   Enter entrar   ·   Esc cerrar",
     "hint": "←  →  ↑  ↓ explorar   ·   Enter aplicar   ·   F favorito   ·   Del volver   ·   Espacio aleatorio",
@@ -26,12 +26,12 @@
   },
   "settings": {
     "wallpaper_dir": {
-      "label": "Directorio Base de Fondos",
-      "description": "Directorio base de fondos. Si no hay slots configurados, se escanearán sus subcarpetas."
+      "label": "Directorio de Fondos",
+      "description": "Ruta de la carpeta de fondos con subcarpetas de colecciones. Déjala vacía para usar la de Noctalia."
     },
     "apply_palette": {
       "label": "Aplicar Paleta de Color",
-      "description": "Aplica automáticamente a Noctalia la paleta asignada al elegir un fondo."
+      "description": "Aplica automáticamente a Noctalia la paleta asignada a la colección al elegir un fondo."
     },
     "notify_on_change": {
       "label": "Notificar al Cambiar",
@@ -40,106 +40,6 @@
     "close_on_apply": {
       "label": "Cerrar al Aplicar",
       "description": "Cierra automáticamente el panel tras aplicar un fondo."
-    },
-    "type_builtin": "Integrada",
-    "type_wallpaper": "Fondo (Dinámica)",
-    "type_community": "Comunidad",
-    "type_custom": "Personalizada",
-    "slot_1_dir": {
-      "label": "Slot 1: Carpeta",
-      "description": "Ruta de la carpeta de fondos para el Slot 1."
-    },
-    "slot_1_type": {
-      "label": "Slot 1: Tipo de Paleta",
-      "description": "Origen de la paleta para el Slot 1 (integrada, fondo, comunidad o personalizada)."
-    },
-    "slot_1_palette": {
-      "label": "Slot 1: Nombre de Paleta",
-      "description": "Nombre de la paleta para el Slot 1 (ej. Nord, Gruvbox, Dim, soft). Déjalo vacío para usar el nombre de la carpeta."
-    },
-    "slot_2_dir": {
-      "label": "Slot 2: Carpeta",
-      "description": "Ruta de la carpeta de fondos para el Slot 2."
-    },
-    "slot_2_type": {
-      "label": "Slot 2: Tipo de Paleta",
-      "description": "Origen de la paleta para el Slot 2 (integrada, fondo, comunidad o personalizada)."
-    },
-    "slot_2_palette": {
-      "label": "Slot 2: Nombre de Paleta",
-      "description": "Nombre de la paleta para el Slot 2 (ej. Nord, Gruvbox, Dim, soft). Déjalo vacío para usar el nombre de la carpeta."
-    },
-    "slot_3_dir": {
-      "label": "Slot 3: Carpeta",
-      "description": "Ruta de la carpeta de fondos para el Slot 3."
-    },
-    "slot_3_type": {
-      "label": "Slot 3: Tipo de Paleta",
-      "description": "Origen de la paleta para el Slot 3 (integrada, fondo, comunidad o personalizada)."
-    },
-    "slot_3_palette": {
-      "label": "Slot 3: Nombre de Paleta",
-      "description": "Nombre de la paleta para el Slot 3 (ej. Nord, Gruvbox, Dim, soft). Déjalo vacío para usar el nombre de la carpeta."
-    },
-    "slot_4_dir": {
-      "label": "Slot 4: Carpeta",
-      "description": "Ruta de la carpeta de fondos para el Slot 4."
-    },
-    "slot_4_type": {
-      "label": "Slot 4: Tipo de Paleta",
-      "description": "Origen de la paleta para el Slot 4 (integrada, fondo, comunidad o personalizada)."
-    },
-    "slot_4_palette": {
-      "label": "Slot 4: Nombre de Paleta",
-      "description": "Nombre de la paleta para el Slot 4 (ej. Nord, Gruvbox, Dim, soft). Déjalo vacío para usar el nombre de la carpeta."
-    },
-    "slot_5_dir": {
-      "label": "Slot 5: Carpeta",
-      "description": "Ruta de la carpeta de fondos para el Slot 5."
-    },
-    "slot_5_type": {
-      "label": "Slot 5: Tipo de Paleta",
-      "description": "Origen de la paleta para el Slot 5 (integrada, fondo, comunidad o personalizada)."
-    },
-    "slot_5_palette": {
-      "label": "Slot 5: Nombre de Paleta",
-      "description": "Nombre de la paleta para el Slot 5 (ej. Nord, Gruvbox, Dim, soft). Déjalo vacío para usar el nombre de la carpeta."
-    },
-    "slot_6_dir": {
-      "label": "Slot 6: Carpeta",
-      "description": "Ruta de la carpeta de fondos para el Slot 6."
-    },
-    "slot_6_type": {
-      "label": "Slot 6: Tipo de Paleta",
-      "description": "Origen de la paleta para el Slot 6 (integrada, fondo, comunidad o personalizada)."
-    },
-    "slot_6_palette": {
-      "label": "Slot 6: Nombre de Paleta",
-      "description": "Nombre de la paleta para el Slot 6 (ej. Nord, Gruvbox, Dim, soft). Déjalo vacío para usar el nombre de la carpeta."
-    },
-    "slot_7_dir": {
-      "label": "Slot 7: Carpeta",
-      "description": "Ruta de la carpeta de fondos para el Slot 7."
-    },
-    "slot_7_type": {
-      "label": "Slot 7: Tipo de Paleta",
-      "description": "Origen de la paleta para el Slot 7 (integrada, fondo, comunidad o personalizada)."
-    },
-    "slot_7_palette": {
-      "label": "Slot 7: Nombre de Paleta",
-      "description": "Nombre de la paleta para el Slot 7 (ej. Nord, Gruvbox, Dim, soft). Déjalo vacío para usar el nombre de la carpeta."
-    },
-    "slot_8_dir": {
-      "label": "Slot 8: Carpeta",
-      "description": "Ruta de la carpeta de fondos para el Slot 8."
-    },
-    "slot_8_type": {
-      "label": "Slot 8: Tipo de Paleta",
-      "description": "Origen de la paleta para el Slot 8 (integrada, fondo, comunidad o personalizada)."
-    },
-    "slot_8_palette": {
-      "label": "Slot 8: Nombre de Paleta",
-      "description": "Nombre de la paleta para el Slot 8 (ej. Nord, Gruvbox, Dim, soft). Déjalo vacío para usar el nombre de la carpeta."
     }
   },
   "shortcut": {
